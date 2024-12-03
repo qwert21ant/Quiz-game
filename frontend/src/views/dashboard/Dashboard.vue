@@ -3,47 +3,28 @@
     <v-progress-circular indeterminate size="x-large"/>
   </div>
   <div v-else>
-    <v-app-bar height="60" elevation="3">
-      <v-app-bar-title>Quiz game</v-app-bar-title>
-      <template #append>
-        <v-btn class="fill-height">
-          <v-icon
-            class="mr-2"
-            icon="mdi-account-circle"
-            size="x-large"
-          />
-          <div>{{ userData.username }}</div>
+    <AppBar :username="userData.username" />
 
-          <v-menu activator="parent">
-            <v-list>
-              <v-list-item
-                class="text-error"
-                @click="logout"
-              >
-              <v-icon
-                class="mr-2"
-                icon="mdi-logout"
-              />
-              <span>LOGOUT</span>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </v-btn>
-      </template>
-    </v-app-bar>
-    
-    <div style="height: 60px"></div>
-    <v-container
-      v-if="userData.activeRoom"
-    >
+    <v-container max-width="1000px">
       <v-card>
-        <v-card-title>Добро пожаловать!</v-card-title>
+        <v-card-title>Управление комнатой</v-card-title>
         <v-card-text>
-          <p>Вы вошли в систему.</p>
+          <v-btn
+            class="mr-3"
+            prepend-icon="mdi-door"
+            text="Моя комната"
+            @click="enterMyRoom"
+          />
+          <v-btn
+            prepend-icon="mdi-location-enter"
+            color="secondary"
+            text="Войти по коду"
+            @click="enterRoom"
+          />
         </v-card-text>
       </v-card>
     </v-container>
-    <v-container>
+    <v-container max-width="1000px">
       <v-card>
         <v-card-title class="d-flex justify-space-between">
           <div>
@@ -82,10 +63,13 @@ import UserData from '@/models/UserData';
 import router from '@/router';
 import AuthService from '@/services/AuthService';
 import UserService from '@/services/UserService';
+import messageBus from '@/utils/MessageBus';
 import { defineComponent } from 'vue';
+import AppBar from '../common/AppBar.vue';
 
 export default defineComponent({
   name: "Dashboard",
+  components: { AppBar },
   data() {
     return {
       authService: new AuthService(),
@@ -97,7 +81,14 @@ export default defineComponent({
   methods: {
     async logout() {
       await this.authService.logout();
+      messageBus.info("Logged out");
       router.push({ path: "/auth" });
+    },
+    enterMyRoom() {
+      router.push({ path: "/room" });
+    },
+    enterRoom() {
+
     },
     createQuiz() {
 

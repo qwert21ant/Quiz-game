@@ -1,5 +1,5 @@
 import RequestResult from "@/models/RequestResult";
-import errorBus from "@/utils/ErrorBus";
+import messageBus from "@/utils/MessageBus";
 import axios, { AxiosError, AxiosInstance } from "axios";
 
 export default class ServiceBase {
@@ -26,7 +26,8 @@ export default class ServiceBase {
 
         if (error.status === 500) {
           console.error(error);
-          errorBus.emit(error.message);
+          messageBus.error(error.message);
+          throw e;
         }
 
         return {
@@ -34,7 +35,8 @@ export default class ServiceBase {
           data: error.response.data as TOut,
           error: e,
         };
-      }
+      } else
+        throw e;
     }
   }
 
@@ -54,7 +56,8 @@ export default class ServiceBase {
 
         if (error.status === 500) {
           console.error(error);
-          errorBus.emit(error.message);
+          messageBus.error(error.message);
+          throw e;
         }
 
         return {
@@ -62,7 +65,8 @@ export default class ServiceBase {
           data: error.response.data as TOut,
           error: e,
         };
-      }
+      } else
+        throw e;
     }
   }
 }

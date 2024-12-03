@@ -1,5 +1,5 @@
 import RequestResult from "@/models/RequestResult";
-import errorBus from "@/utils/ErrorBus";
+import messageBus from "@/utils/MessageBus";
 import ServiceBase from "./ServiceBase";
 import router from "@/router";
 
@@ -12,8 +12,9 @@ export default class AuthServiceBase extends ServiceBase {
     const res = await super.post<TIn, TOut>(path, data);
 
     if (res.status === 401) {
-      errorBus.emit("Unauthorized");
+      messageBus.error("Unauthorized");
       router.push({ path: "/auth" });
+      throw res.error;
     }
 
     return res;
@@ -23,8 +24,9 @@ export default class AuthServiceBase extends ServiceBase {
     const res = await super.get<TIn, TOut>(path, params);
 
     if (res.status === 401) {
-      errorBus.emit("Unauthorized");
+      messageBus.error("Unauthorized");
       router.push({ path: "/auth" });
+      throw res.error;
     }
 
     return res;

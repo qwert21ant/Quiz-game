@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <v-container max-width="1000px">
     <v-card>
       <v-card-title>
         <v-tabs v-model="tab" background-color="primary">

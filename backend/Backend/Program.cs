@@ -27,6 +27,7 @@ public class Program {
 
     builder.Services.AddSingleton<ICredentialsService, CredentialsService>();
     builder.Services.AddSingleton<IUserService, UserService>();
+    builder.Services.AddSingleton<IRoomService, RoomService>();
 
     builder.Services.AddControllers();
 

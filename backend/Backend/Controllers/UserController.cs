@@ -1,4 +1,3 @@
-using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,11 +14,8 @@ public class UserController : Controller {
 
   [Route("user")]
   public async Task<IActionResult> GetUserData() {
-    var name = HttpContext.User.Identity!.Name;
+    var user = HttpContext.User.Identity!.Name!;
 
-    if (name == null)
-      throw new Exception("Username not found in HttpContext");
-
-    return Json(await userService.GetUserData(name));
+    return Json(await userService.GetUserData(user));
   }
 }
