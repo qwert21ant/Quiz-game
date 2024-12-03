@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import Login from "./views/Auth.vue";
 import Home from "./views/Home.vue";
-import Dashboard from "./views/Dashboard.vue";
+import Dashboard from "./views/dashboard/Dashboard.vue";
 
 const routes: RouteRecordRaw[] = [
   { path: "/auth", component: Login },

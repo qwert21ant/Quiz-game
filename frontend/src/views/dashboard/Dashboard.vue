@@ -31,11 +31,46 @@
         </v-btn>
       </template>
     </v-app-bar>
-    <v-container style="margin-top: 60px">
+    
+    <div style="height: 60px"></div>
+    <v-container
+      v-if="userData.activeRoom"
+    >
       <v-card>
         <v-card-title>Добро пожаловать!</v-card-title>
         <v-card-text>
           <p>Вы вошли в систему.</p>
+        </v-card-text>
+      </v-card>
+    </v-container>
+    <v-container>
+      <v-card>
+        <v-card-title class="d-flex justify-space-between">
+          <div>
+            Мои квизы
+          </div>
+          <v-btn
+            prepend-icon="mdi-plus"
+            @click="createQuiz"
+          >
+            Создать
+          </v-btn>
+        </v-card-title>
+        <v-card-text>
+          <div v-if="!userData.quizes.length">
+            У вас нет квизов
+          </div>
+          <div v-else class="d-flex flex-wrap">
+            <v-card
+              v-for="quiz in userData.quizes"
+              class="ma-1"
+              width="250"
+              @click="openQuiz(quiz.name)"
+            >
+              <v-card-title>{{ quiz.name }}</v-card-title>
+              <v-card-text>{{ quiz.name }}</v-card-text>
+            </v-card>
+          </div>
         </v-card-text>
       </v-card>
     </v-container>
@@ -63,6 +98,12 @@ export default defineComponent({
     async logout() {
       await this.authService.logout();
       router.push({ path: "/auth" });
+    },
+    createQuiz() {
+
+    },
+    openQuiz(name: string) {
+
     },
   },
   async mounted() {
