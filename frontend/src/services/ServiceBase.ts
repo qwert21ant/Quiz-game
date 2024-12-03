@@ -28,9 +28,13 @@ export default class ServiceBase {
           console.error(error);
           errorBus.emit(error.message);
         }
-      }
 
-      throw e;
+        return {
+          status: error.response.status,
+          data: error.response.data as TOut,
+          error: e,
+        };
+      }
     }
   }
 
@@ -50,6 +54,7 @@ export default class ServiceBase {
 
         if (error.status === 500) {
           console.error(error);
+          errorBus.emit(error.message);
         }
 
         return {

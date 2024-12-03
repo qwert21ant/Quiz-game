@@ -1,7 +1,9 @@
+using System.Threading.Tasks;
+
 public interface ICredentialsService {
   bool Exists(string login);
 
-  void Add(Credentials creds);
+  Task Add(Credentials creds);
 
   bool Validate(Credentials creds);
 }

@@ -5,8 +5,8 @@ public class UserData {
   required public string Username { get; set; }
 
   [JsonPropertyName("activeRoom")]
-  required public string? ActiveRoom { get; set; }
+  public string? ActiveRoom { get; set; }
 
   [JsonPropertyName("quizes")]
-  required public QuizPreview[] Quizes { get; set; }
+  public QuizPreview[] Quizes { get; set; } = [];
 }
