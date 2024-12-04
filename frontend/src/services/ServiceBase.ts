@@ -1,4 +1,3 @@
-import RequestResult from "@/models/RequestResult";
 import messageBus from "@/utils/MessageBus";
 import axios, { AxiosError, AxiosInstance } from "axios";
 
@@ -12,14 +11,10 @@ export default class ServiceBase {
     });
   }
 
-  protected async post<TIn, TOut>(path: string, data?: TIn | undefined): Promise<RequestResult<TOut>> {
+  protected async post<TIn, TOut>(path: string, data?: TIn | undefined): Promise<TOut> {
     try {
       const res = await this.httpClient.post(path, data);
-
-      return {
-        status: res.status,
-        data: res.data,
-      };
+      return res.data;
     } catch (e) {
       if (e instanceof AxiosError) {
         const error = e as AxiosError;
@@ -27,29 +22,19 @@ export default class ServiceBase {
         if (error.status === 500) {
           console.error(error);
           messageBus.error(error.message);
-          throw e;
         }
+      }
 
-        return {
-          status: error.response.status,
-          data: error.response.data as TOut,
-          error: e,
-        };
-      } else
-        throw e;
+      throw e;
     }
   }
 
-  protected async get<TIn, TOut>(path: string, params?: TIn | undefined): Promise<RequestResult<TOut>> {
+  protected async get<TIn, TOut>(path: string, params?: TIn | undefined): Promise<TOut> {
     try {
       const res = await this.httpClient.get(path, {
         params,
       });
-
-      return {
-        status: res.status,
-        data: res.data,
-      };
+      return res.data;
     } catch (e) {
       if (e instanceof AxiosError) {
         const error = e as AxiosError;
@@ -57,16 +42,10 @@ export default class ServiceBase {
         if (error.status === 500) {
           console.error(error);
           messageBus.error(error.message);
-          throw e;
         }
+      }
 
-        return {
-          status: error.response.status,
-          data: error.response.data as TOut,
-          error: e,
-        };
-      } else
-        throw e;
+      throw e;
     }
   }
 }

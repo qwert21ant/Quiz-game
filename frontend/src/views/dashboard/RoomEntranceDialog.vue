@@ -4,16 +4,17 @@
     max-width="600"
   >
     <v-card>
-      <v-card-title>Создать комнату</v-card-title>
-      <v-card-text>
+      <v-card-title>Войти в комнату</v-card-title>
+      <v-card-text style="padding-bottom: 0">
         <v-text-field
-          label="Имя комнаты"
+          v-model="roomId"
+          label="ID комнаты"
         />
-        <v-select></v-select>
       </v-card-text>
       <v-card-actions>
         <v-btn
-          text="Создать"
+          text="Войти"
+          @click="$emit('join', roomId)"
         />
       </v-card-actions>
     </v-card>
@@ -23,11 +24,16 @@
 import { defineComponent } from 'vue';
 
 export default defineComponent({
-  name: "RoomCreationDialog",
+  name: "RoomEntranceDialog",
   props: {
     modelValue: Boolean,
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "join"],
+  data() {
+    return {
+      roomId: "" as string,
+    };
+  },
   computed: {
     displayed: {
       get() {

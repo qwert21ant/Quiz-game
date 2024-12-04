@@ -43,6 +43,8 @@ public class Program {
 
     app.UseAuthentication();
 
+    app.UseMiddleware<ServiceExceptionHandlerMiddleware>();
+
     app.Map("/api", api => {
       api.UseRouting();
 

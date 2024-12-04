@@ -7,20 +7,29 @@ export default class AuthService extends ServiceBase {
   }
 
   public async login(creds: Credentials): Promise<boolean> {
-    const res = await this.post("/login", creds);
-
-    return res.status === 200;
+    try {
+      await this.post("/login", creds);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   public async signup(creds: Credentials) {
-    const res = await this.post("/signup", creds);
-
-    return res.status === 200;
+    try {
+      await this.post("/signup", creds);
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   public async logout() {
-    const res = await this.post("/logout");
-
-    return res.status === 200;
+    try {
+      await this.post("/logout");
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }

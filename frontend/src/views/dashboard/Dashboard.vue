@@ -19,7 +19,7 @@
             prepend-icon="mdi-location-enter"
             color="secondary"
             text="Войти по коду"
-            @click="enterRoom"
+            @click="showRoomEntranceDialog = true"
           />
         </v-card-text>
       </v-card>
@@ -55,6 +55,10 @@
         </v-card-text>
       </v-card>
     </v-container>
+    <RoomEntranceDialog
+      v-model="showRoomEntranceDialog"
+      @join="joinRoom"
+    />
   </div>
 </template>
 
@@ -66,16 +70,21 @@ import UserService from '@/services/UserService';
 import messageBus from '@/utils/MessageBus';
 import { defineComponent } from 'vue';
 import AppBar from '../common/AppBar.vue';
+import RoomEntranceDialog from './RoomEntranceDialog.vue';
+import RoomService from '@/services/RoomService';
 
 export default defineComponent({
   name: "Dashboard",
-  components: { AppBar },
+  components: { AppBar, RoomEntranceDialog },
   data() {
     return {
       authService: new AuthService(),
       userService: new UserService(),
+      roomService: new RoomService(),
 
       userData: null as UserData,
+
+      showRoomEntranceDialog: false as boolean,
     };
   },
   methods: {
@@ -87,8 +96,10 @@ export default defineComponent({
     enterMyRoom() {
       router.push({ path: "/room" });
     },
-    enterRoom() {
-
+    async joinRoom(roomId: string) {
+      await this.roomService.joinRoom({
+        id: roomId,
+      });
     },
     createQuiz() {
 

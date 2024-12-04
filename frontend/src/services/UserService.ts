@@ -7,7 +7,6 @@ export default class UserService extends AuthServiceBase {
   }
 
   public async getUserData(): Promise<UserData> {
-    const res = await this.get<undefined, UserData>("");
-    return res.data;
+    return this.get<undefined, UserData>("");
   }
 }

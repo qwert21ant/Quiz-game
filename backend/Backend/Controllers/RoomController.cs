@@ -28,4 +28,52 @@ public class RoomController : Controller {
     await roomService.UpdateConfig(user, roomConfig);
     return Ok();
   }
+
+  [HttpGet("state")]
+  public async Task<IActionResult> GetState() {
+    var user = HttpContext.User.Identity!.Name!;
+
+    var state = await roomService.GetRoomState(user);
+    return Json(state);
+  }
+
+  [HttpPost("open")]
+  public async Task<IActionResult> OpenRoom() {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await roomService.OpenRoom(user);
+    return Ok();
+  }
+
+  [HttpPost("close")]
+  public async Task<IActionResult> CloseRoom() {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await roomService.CloseRoom(user);
+    return Ok();
+  }
+
+  [HttpPost("kick")]
+  public async Task<IActionResult> KickParticipant([FromBody] KickParticipantData data) {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await roomService.KickParticipant(user, data.Participant);
+    return Ok();
+  }
+
+  [HttpPost("join")]
+  public async Task<IActionResult> JoinRoom([FromBody] RoomJoinData data) {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await roomService.JoinRoom(user, data.Id);
+    return Ok();
+  }
+
+  [HttpPost("leave")]
+  public async Task<IActionResult> LeaveRoom([FromBody] RoomJoinData data) {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await roomService.LeaveRoom(user, data.Id);
+    return Ok();
+  }
 }
