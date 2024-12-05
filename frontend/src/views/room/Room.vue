@@ -3,8 +3,6 @@
     <v-progress-circular indeterminate size="x-large"/>
   </div>
   <div v-else>
-    <AppBar :username="userData.username" />
-
     <v-container max-width="1000px">
       <v-card>
         <v-card-title>
@@ -120,13 +118,11 @@ import UserData from '@/models/UserData';
 import RoomService from '@/services/RoomService';
 import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
-import AppBar from '../common/AppBar.vue';
 import router from '@/router';
 import RoomState from '@/models/RoomState';
 
 export default defineComponent({
   name: "Room",
-  components: { AppBar },
   data() {
     return {
       userService: new UserService(),

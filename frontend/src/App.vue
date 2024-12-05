@@ -1,5 +1,6 @@
 <template>
   <v-app>
+    <AppBar />
     <RouterView />
     <v-snackbar
       v-model="showSnackbar"
@@ -27,9 +28,11 @@
 <script lang="ts">
 import { defineComponent } from 'vue';
 import messageBus, { Message } from "@/utils/MessageBus"
+import AppBar from './views/common/AppBar.vue';
 
 export default defineComponent({
   name: "App",
+  components: { AppBar },
   data() {
     return {
       message: null as Message,

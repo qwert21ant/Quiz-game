@@ -14,6 +14,16 @@ public class AuthController : Controller {
     this.credsService = credsService;
   }
 
+  [HttpGet("me")]
+  public async Task<IActionResult> GetUsername() {
+    var user = HttpContext.User.Identity?.Name;
+
+    if (user == null)
+      return Unauthorized();
+
+    return Ok(user);
+  }
+
   [HttpPost("login")]
   public async Task<IActionResult> Login([FromBody] Credentials creds) {
     if (credsService.Validate(creds)) {

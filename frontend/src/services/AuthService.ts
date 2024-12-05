@@ -6,6 +6,14 @@ export default class AuthService extends ServiceBase {
     super("/auth");
   }
 
+  public async me(): Promise<string> {
+    try {
+      return await this.get("/me");
+    } catch (e) {
+      return null;
+    }
+  }
+
   public async login(creds: Credentials): Promise<boolean> {
     try {
       await this.post("/login", creds);

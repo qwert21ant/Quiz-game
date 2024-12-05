@@ -3,8 +3,6 @@
     <v-progress-circular indeterminate size="x-large"/>
   </div>
   <div v-else>
-    <AppBar :username="userData.username" />
-
     <v-container max-width="1000px">
       <v-card>
         <v-card-title>Управление комнатой</v-card-title>
@@ -69,13 +67,12 @@ import AuthService from '@/services/AuthService';
 import UserService from '@/services/UserService';
 import messageBus from '@/utils/MessageBus';
 import { defineComponent } from 'vue';
-import AppBar from '../common/AppBar.vue';
 import RoomEntranceDialog from './RoomEntranceDialog.vue';
 import RoomService from '@/services/RoomService';
 
 export default defineComponent({
   name: "Dashboard",
-  components: { AppBar, RoomEntranceDialog },
+  components: { RoomEntranceDialog },
   data() {
     return {
       authService: new AuthService(),

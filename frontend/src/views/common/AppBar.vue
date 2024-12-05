@@ -1,7 +1,7 @@
 <template>
   <v-app-bar height="60" elevation="3">
     <v-app-bar-title>Quiz game</v-app-bar-title>
-    <template #append>
+    <template #append v-if="username">
       <v-btn class="fill-height">
         <v-icon
           class="mr-2"
@@ -39,8 +39,11 @@ import { defineComponent } from 'vue';
 
 export default defineComponent({
   name: "AppBar",
-  props: {
-    username: String,
+  data() {
+    return {
+      authService: new AuthService(),
+      username: null as string,
+    };
   },
   methods: {
     async logout() {
@@ -48,6 +51,20 @@ export default defineComponent({
       messageBus.info("Logged out");
       router.push({ path: "/auth" });
     },
+  },
+  mounted() {
+    router.beforeEach(async (to, from, next) => {
+      if (to.path === "/auth" || from.path === "/auth" || from.path === "/")
+        this.username = await this.authService.me();
+
+      if (to.path === "/auth" && this.username) {
+        messageBus.info("Authorized");
+        next({ path: "/dashboard" });
+        return;
+      }
+
+      next();
+    });
   },
 });
 </script>
