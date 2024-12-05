@@ -17,7 +17,9 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
     await Mutate(value => {
       value.Rooms.Add(user, new Room {
         Config = new RoomConfig {
-          Name = user + "\'s room",
+          Info = new RoomPublicInfo {
+            Name = user + "\'s room"
+          },
           MaxParticipants = 10
         },
         State = new RoomState {
@@ -81,15 +83,17 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
     });
   }
 
-  public async Task<string> GetRoomOwner(string roomId) {
-    if (!Value.RoomIdToUser.ContainsKey(roomId))
-      throw new ServiceException("Room with id " + roomId + " not found");
+  public async Task<RoomPublicInfo> GetRoomInfo(string user, string roomId) {
+    var owner = GetRoomOwner(roomId);
 
-    return Value.RoomIdToUser[roomId];
+    if (!Value.Rooms[owner].State.Participants.Contains(user))
+      throw new ServiceException("You are not in room");
+    
+    return (await GetRoomConfig(owner)).Info;
   }
 
   public async Task JoinRoom(string user, string roomId) {
-    var owner = await GetRoomOwner(roomId);
+    var owner = GetRoomOwner(roomId);
     if (user == owner)
       throw new ServiceException("Owner of room cant join room");
 
@@ -102,13 +106,20 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   public async Task LeaveRoom(string user, string roomId) {
-    var owner = await GetRoomOwner(roomId);
+    var owner = GetRoomOwner(roomId);
     if (user == owner)
       throw new ServiceException("Owner of room cant join room");
 
     await Mutate(value => {
       value.Rooms[owner].State.Participants.Remove(user);
     });
+  }
+
+  public string GetRoomOwner(string roomId) {
+    if (!Value.RoomIdToUser.ContainsKey(roomId))
+      throw new ServiceException("Room with id " + roomId + " not found");
+
+    return Value.RoomIdToUser[roomId];
   }
 
   private string GetUniqueRoomID() {
@@ -120,6 +131,6 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   private string GetNewRoomID() {
-    return "#" + random.Next(0, 1_000_000).ToString();
+    return random.Next(0, 1_000_000).ToString();
   }
 }

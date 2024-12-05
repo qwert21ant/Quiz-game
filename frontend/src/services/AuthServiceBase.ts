@@ -8,9 +8,9 @@ export default class AuthServiceBase extends ServiceBase {
     super(path);
   }
 
-  protected override async post<TIn, TOut>(path: string, data?: TIn | undefined): Promise<TOut> {
+  protected override async post<TIn, TOut>(path: string, data?: TIn | undefined, contentType?: string): Promise<TOut> {
     try {
-      return await super.post<TIn, TOut>(path, data);
+      return await super.post<TIn, TOut>(path, data, contentType);
     } catch (e) {
       if (e instanceof AxiosError) {
         const error = e as AxiosError;
@@ -25,9 +25,9 @@ export default class AuthServiceBase extends ServiceBase {
     }
   }
 
-  protected override async get<TIn, TOut>(path: string, params?: TIn | undefined): Promise<TOut> {
+  protected override async get<TIn, TOut>(path: string, params?: TIn | undefined, contentType?: string): Promise<TOut> {
     try {
-      return await super.get<TIn, TOut>(path, params);
+      return await super.get<TIn, TOut>(path, params, contentType);
     } catch (e) {
       if (e instanceof AxiosError) {
         const error = e as AxiosError;

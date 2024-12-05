@@ -63,21 +63,18 @@
 <script lang="ts">
 import UserData from '@/models/UserData';
 import router from '@/router';
-import AuthService from '@/services/AuthService';
 import UserService from '@/services/UserService';
-import messageBus from '@/utils/MessageBus';
 import { defineComponent } from 'vue';
 import RoomEntranceDialog from './RoomEntranceDialog.vue';
-import RoomService from '@/services/RoomService';
+import RoomParticipantService from '@/services/RoomParticipantService';
 
 export default defineComponent({
   name: "Dashboard",
   components: { RoomEntranceDialog },
   data() {
     return {
-      authService: new AuthService(),
       userService: new UserService(),
-      roomService: new RoomService(),
+      roomService: new RoomParticipantService(),
 
       userData: null as UserData,
 
@@ -85,11 +82,6 @@ export default defineComponent({
     };
   },
   methods: {
-    async logout() {
-      await this.authService.logout();
-      messageBus.info("Logged out");
-      router.push({ path: "/auth" });
-    },
     enterMyRoom() {
       router.push({ path: "/room" });
     },
@@ -97,6 +89,8 @@ export default defineComponent({
       await this.roomService.joinRoom({
         id: roomId,
       });
+
+      router.push({ path: "/room/" + roomId });
     },
     createQuiz() {
 

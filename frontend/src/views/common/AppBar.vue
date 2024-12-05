@@ -1,6 +1,8 @@
 <template>
   <v-app-bar height="60" elevation="3">
-    <v-app-bar-title>Quiz game</v-app-bar-title>
+    <v-app-bar-title>
+      <a href="/dashboard" style="text-decoration: none; color: black;">Quiz game</a>
+    </v-app-bar-title>
     <template #append v-if="username">
       <v-btn class="fill-height">
         <v-icon

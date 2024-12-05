@@ -5,11 +5,11 @@ using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
 [Authorize]
-[Route("room")]
-public class RoomController : Controller {
+[Route("/room/admin")]
+public class RoomAdminController : Controller {
   private IRoomService roomService;
 
-  public RoomController(IRoomService roomService) {
+  public RoomAdminController(IRoomService roomService) {
     this.roomService = roomService;
   }
 
@@ -54,26 +54,10 @@ public class RoomController : Controller {
   }
 
   [HttpPost("kick")]
-  public async Task<IActionResult> KickParticipant([FromBody] KickParticipantData data) {
+  public async Task<IActionResult> KickParticipant([FromBody] KickParticipantDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
     await roomService.KickParticipant(user, data.Participant);
-    return Ok();
-  }
-
-  [HttpPost("join")]
-  public async Task<IActionResult> JoinRoom([FromBody] RoomJoinData data) {
-    var user = HttpContext.User.Identity!.Name!;
-
-    await roomService.JoinRoom(user, data.Id);
-    return Ok();
-  }
-
-  [HttpPost("leave")]
-  public async Task<IActionResult> LeaveRoom([FromBody] RoomJoinData data) {
-    var user = HttpContext.User.Identity!.Name!;
-
-    await roomService.LeaveRoom(user, data.Id);
     return Ok();
   }
 }

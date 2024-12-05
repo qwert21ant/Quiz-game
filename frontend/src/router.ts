@@ -3,12 +3,14 @@ import Login from "./views/Auth.vue";
 import Home from "./views/Home.vue";
 import Dashboard from "./views/dashboard/Dashboard.vue";
 import Room from "./views/room/Room.vue";
+import Game from "./views/game/Game.vue";
 
 const routes: RouteRecordRaw[] = [
   { path: "/auth", component: Login },
   { path: "/", component: Home },
   { path: "/dashboard", component: Dashboard },
   { path: "/room", component: Room },
+  { path: "/room/:id", component: Game },
 ];
 
 const router = createRouter({

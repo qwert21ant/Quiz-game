@@ -1,6 +1,7 @@
 using System.Threading.Tasks;
 
 public interface IRoomService {
+  // admin
   Task<RoomConfig> GetRoomConfig(string user);
   Task UpdateConfig(string user, RoomConfig roomConfig);
 
@@ -9,6 +10,8 @@ public interface IRoomService {
   Task CloseRoom(string user);
   Task KickParticipant(string user, string participant);
 
+  // participant
   Task JoinRoom(string user, string roomId);
   Task LeaveRoom(string user, string roomId);
+  Task<RoomPublicInfo> GetRoomInfo(string user, string roomId);
 }

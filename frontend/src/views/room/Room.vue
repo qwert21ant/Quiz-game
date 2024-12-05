@@ -29,11 +29,11 @@
         </v-card-title>
         <v-card-text style="padding-bottom: 0;">
           <v-text-field
-            v-model="roomConfig.name"
+            v-model="roomConfig.info.name"
             label="Name"
           />
           <v-text-field
-            v-model="roomConfig.description"
+            v-model="roomConfig.info.description"
             label="Description"
           />
           <v-select
@@ -115,7 +115,7 @@
 <script lang="ts">
 import RoomConfig from '@/models/RoomConfig';
 import UserData from '@/models/UserData';
-import RoomService from '@/services/RoomService';
+import RoomAdminService from '@/services/RoomAdminService';
 import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
 import router from '@/router';
@@ -126,7 +126,7 @@ export default defineComponent({
   data() {
     return {
       userService: new UserService(),
-      roomService: new RoomService(),
+      roomService: new RoomAdminService(),
 
       userData: null as UserData,
       roomConfig: null as RoomConfig,

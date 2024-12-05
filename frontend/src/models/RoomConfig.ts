@@ -1,6 +1,7 @@
+import RoomPublicInfo from "./RoomPublicInfo";
+
 export default interface RoomConfig {
-  name: string;
-  description?: string;
+  info: RoomPublicInfo;
   quizName?: string;
   maxParticipants: number;
 }

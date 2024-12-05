@@ -11,9 +11,15 @@ export default class ServiceBase {
     });
   }
 
-  protected async post<TIn, TOut>(path: string, data?: TIn | undefined): Promise<TOut> {
+  protected async post<TIn, TOut>(path: string, data?: TIn | undefined, contentType?: string): Promise<TOut> {
+    const config = contentType ? {
+      headers: {
+        "Content-Type": contentType,
+      },
+    } : undefined;
+    
     try {
-      const res = await this.httpClient.post(path, data);
+      const res = await this.httpClient.post(path, data, config);
       return res.data;
     } catch (e) {
       if (e instanceof AxiosError) {
@@ -29,7 +35,13 @@ export default class ServiceBase {
     }
   }
 
-  protected async get<TIn, TOut>(path: string, params?: TIn | undefined): Promise<TOut> {
+  protected async get<TIn, TOut>(path: string, params?: TIn | undefined, contentType?: string): Promise<TOut> {
+    const config = contentType ? {
+      headers: {
+        "Content-Type": contentType,
+      },
+    } : undefined;
+    
     try {
       const res = await this.httpClient.get(path, {
         params,
