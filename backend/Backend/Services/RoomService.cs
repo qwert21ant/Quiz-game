@@ -10,14 +10,14 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
     : base(Path.Join(settings.Value.RootDir, "rooms.json"), new RoomsStorage())
     {}
 
-  private async Task<Room> EnsureRoom(string user) {
-    if (Value.Rooms.TryGetValue(user, out var room))
-      return room;
+  public async Task InitUser(string user) {
+    if (Value.Rooms.ContainsKey(user))
+      return;
     
     await Mutate(value => {
       value.Rooms.Add(user, new Room {
         Config = new RoomConfig {
-          Info = new RoomPublicInfo {
+          Info = new RoomInfo {
             Name = user + "\'s room"
           },
           MaxParticipants = 10
@@ -27,25 +27,19 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
         }
       });
     });
-
-    return Value.Rooms[user];
   }
 
   public async Task<RoomConfig> GetRoomConfig(string user) {
-    return (await EnsureRoom(user)).Config;
+    return Value.Rooms[user].Config;
   }
 
   public async Task UpdateConfig(string user, RoomConfig roomConfig) {
-    await EnsureRoom(user);
-    
     await Mutate(value => {
       value.Rooms[user].Config = roomConfig;
     });
   }
 
   public async Task<RoomState> GetRoomState(string user) {
-    await EnsureRoom(user);
-
     return Value.Rooms[user].State;
   }
 
@@ -83,17 +77,8 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
     });
   }
 
-  public async Task<RoomPublicInfo> GetRoomInfo(string user, string roomId) {
-    var owner = GetRoomOwner(roomId);
-
-    if (!Value.Rooms[owner].State.Participants.Contains(user))
-      throw new ServiceException("You are not in room");
-    
-    return (await GetRoomConfig(owner)).Info;
-  }
-
   public async Task JoinRoom(string user, string roomId) {
-    var owner = GetRoomOwner(roomId);
+    var owner = await GetRoomOwner(roomId);
     if (user == owner)
       throw new ServiceException("Owner of room cant join room");
 
@@ -106,7 +91,7 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   public async Task LeaveRoom(string user, string roomId) {
-    var owner = GetRoomOwner(roomId);
+    var owner = await GetRoomOwner(roomId);
     if (user == owner)
       throw new ServiceException("Owner of room cant join room");
 
@@ -115,7 +100,16 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
     });
   }
 
-  public string GetRoomOwner(string roomId) {
+  public async Task<RoomInfo> GetRoomInfo(string user, string roomId) {
+    var owner = await GetRoomOwner(roomId);
+
+    if (!Value.Rooms[owner].State.Participants.Contains(user))
+      throw new ServiceException("You are not in room");
+    
+    return (await GetRoomConfig(owner)).Info;
+  }
+
+  public async Task<string> GetRoomOwner(string roomId) {
     if (!Value.RoomIdToUser.ContainsKey(roomId))
       throw new ServiceException("Room with id " + roomId + " not found");
 
@@ -131,6 +125,6 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   private string GetNewRoomID() {
-    return random.Next(0, 1_000_000).ToString();
+    return random.Next(0, 100_000_000).ToString();
   }
 }

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-public class RoomPublicInfo {
+public class RoomInfo {
   [JsonPropertyName("name")]
   public required string Name { get; set; }
 

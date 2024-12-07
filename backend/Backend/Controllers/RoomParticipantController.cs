@@ -13,22 +13,6 @@ public class RoomParticipantController : Controller {
     this.roomService = roomService;
   }
 
-  [HttpGet("info")]
-  public async Task<IActionResult> GetInfo([FromQuery] RoomIdDTO data) {
-    var user = HttpContext.User.Identity!.Name!;
-
-    var info = await roomService.GetRoomInfo(user, data.Id);
-    return Json(info);
-  }
-
-  [HttpGet("state")]
-  public async Task<IActionResult> GetState([FromBody] RoomIdDTO data) {
-    var user = HttpContext.User.Identity!.Name!;
-
-    var state = await roomService.GetRoomState(user);
-    return Json(state);
-  }
-
   [HttpPost("join")]
   public async Task<IActionResult> JoinRoom([FromBody] RoomIdDTO data) {
     var user = HttpContext.User.Identity!.Name!;
@@ -43,5 +27,13 @@ public class RoomParticipantController : Controller {
 
     await roomService.LeaveRoom(user, data.Id);
     return Ok();
+  }
+
+  [HttpGet("info")]
+  public async Task<IActionResult> GetInfo([FromQuery] RoomIdDTO data) {
+    var user = HttpContext.User.Identity!.Name!;
+
+    var info = await roomService.GetRoomInfo(user, data.Id);
+    return Json(info);
   }
 }

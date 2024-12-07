@@ -1,23 +1,26 @@
-using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
 
-public class UserService : JsonPersistenceService<Dictionary<string, UserData>>, IUserService {
-  public UserService(IOptions<StorageSettings> settings)
-    : base(Path.Join(settings.Value.RootDir, "users.json"), new Dictionary<string, UserData>())
-    {}
+public class UserService : IUserService {
+  private IQuizService quizService;
+  private IRoomService roomService;
+  private IGameService gameService;
+  
+  public UserService(IQuizService quizService, IRoomService roomService, IGameService gameService) {
+    this.quizService = quizService;
+    this.roomService = roomService;
+    this.gameService = gameService;
+  }
+
+  public async Task InitUser(string user) {
+    await quizService.InitUser(user);
+    await roomService.InitUser(user);
+    await gameService.InitUser(user);
+  }
 
   public async Task<UserData> GetUserData(string user) {
-    if (Value.TryGetValue(user, out var userData))
-      return userData;
-
-    await Mutate(value => {
-      value.Add(user, new UserData {
-        Username = user,
-      });
-    });
-
-    return Value[user];
+    return new UserData {
+      Username = user,
+      Quizzes = await quizService.GetQuizzesInfo(user)
+    };
   }
 }

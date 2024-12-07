@@ -1,15 +1,18 @@
 using System.Text.Json.Serialization;
 
 public class QuizQuestion {
-  [JsonPropertyName("title")]
-  required public string Title { get; set; }
-
   [JsonPropertyName("type")]
-  required public QuizQuestionType Type { get; set; }
+  public required QuizQuestionType Type { get; set; }
+
+  [JsonPropertyName("text")]
+  public required string Text { get; set; }
 
   [JsonPropertyName("answer")]
-  required public object Answer { get; set; }
+  public object? Answer { get; set; }
 
-  [JsonPropertyName("choises")]
-  public object[]? Choises { get; set; }
+  [JsonPropertyName("options")]
+  public object[]? Options { get; set; }
+
+  [JsonPropertyName("answerOptionInd")]
+  public int? AnswerOptionInd { get; set; }
 }

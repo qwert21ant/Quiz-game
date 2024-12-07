@@ -9,9 +9,11 @@ using Microsoft.AspNetCore.Mvc;
 [Route("auth")]
 public class AuthController : Controller {
   private readonly ICredentialsService credsService;
+  private readonly IUserService userService;
 
-  public AuthController(ICredentialsService credsService) {
+  public AuthController(ICredentialsService credsService, IUserService userService) {
     this.credsService = credsService;
+    this.userService = userService;
   }
 
   [HttpGet("me")]
@@ -40,6 +42,7 @@ public class AuthController : Controller {
       return BadRequest("This username is already in use");
     
     await credsService.Add(creds);
+    await userService.InitUser(creds.Username);
     await LoginInner(creds.Username);
     return Ok();
   }

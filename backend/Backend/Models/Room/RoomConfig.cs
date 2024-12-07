@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 public class RoomConfig {
   [JsonPropertyName("info")]
-  public required RoomPublicInfo Info { get; set; }
+  public required RoomInfo Info { get; set; }
 
   [JsonPropertyName("quizName")]
   public string? QuizName { get; set; }

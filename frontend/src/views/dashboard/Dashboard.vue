@@ -30,24 +30,23 @@
           </div>
           <v-btn
             prepend-icon="mdi-plus"
-            @click="createQuiz"
+            @click="showQuizCreationDialog = true"
           >
             Создать
           </v-btn>
         </v-card-title>
         <v-card-text>
-          <div v-if="!userData.quizes.length">
+          <div v-if="!userData.quizzes.length">
             У вас нет квизов
           </div>
           <div v-else class="d-flex flex-wrap">
             <v-card
-              v-for="quiz in userData.quizes"
+              v-for="quiz in userData.quizzes"
               class="ma-1"
               width="250"
-              @click="openQuiz(quiz.name)"
+              @click="openQuiz(quiz.id)"
             >
               <v-card-title>{{ quiz.name }}</v-card-title>
-              <v-card-text>{{ quiz.name }}</v-card-text>
             </v-card>
           </div>
         </v-card-text>
@@ -56,6 +55,10 @@
     <RoomEntranceDialog
       v-model="showRoomEntranceDialog"
       @join="joinRoom"
+    />
+    <QuizCreationDialog
+      v-model="showQuizCreationDialog"
+      @create="createQuiz"
     />
   </div>
 </template>
@@ -67,18 +70,22 @@ import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
 import RoomEntranceDialog from './RoomEntranceDialog.vue';
 import RoomParticipantService from '@/services/RoomParticipantService';
+import QuizCreationDialog from './QuizCreationDialog.vue';
+import QuizService from '@/services/QuizService';
 
 export default defineComponent({
   name: "Dashboard",
-  components: { RoomEntranceDialog },
+  components: { RoomEntranceDialog, QuizCreationDialog },
   data() {
     return {
       userService: new UserService(),
       roomService: new RoomParticipantService(),
+      quizService: new QuizService(),
 
       userData: null as UserData,
 
       showRoomEntranceDialog: false as boolean,
+      showQuizCreationDialog: false as boolean,
     };
   },
   methods: {
@@ -86,17 +93,16 @@ export default defineComponent({
       router.push({ path: "/room" });
     },
     async joinRoom(roomId: string) {
-      await this.roomService.joinRoom({
-        id: roomId,
-      });
+      await this.roomService.joinRoom(roomId);
 
-      router.push({ path: "/room/" + roomId });
+      router.push({ path: "/game/" + roomId });
     },
-    createQuiz() {
-
+    async createQuiz(quizName: string) {
+      const id = await this.quizService.createQuiz(quizName);
+      router.push({ path: "/quiz/" + id });
     },
-    openQuiz(name: string) {
-
+    openQuiz(quizId: string) {
+      router.push({ path: "/quiz/" + quizId });
     },
   },
   async mounted() {

@@ -1,26 +1,25 @@
 import AuthServiceBase from "./AuthServiceBase";
-import RoomState from "@/models/RoomState";
-import RoomIdDTO from "@/models/RoomIdDTO";
-import RoomPublicInfo from "@/models/RoomPublicInfo";
+import RoomInfo from "@/models/room/RoomInfo";
+import GameState from "@/models/GameState";
 
 export default class RoomParticipantService extends AuthServiceBase {
   public constructor() {
     super("/room/participant");
   }
 
-  public async getInfo(data: RoomIdDTO): Promise<RoomPublicInfo> {
-    return this.get("/info", data);
+  public async joinRoom(roomId: string): Promise<void> {
+    return this.post("/join", { id: roomId });
   }
 
-  public async getState(data: RoomIdDTO): Promise<RoomState> {
-    return this.get("/state", data);
+  public async leaveRoom(roomId: string): Promise<void> {
+    return this.post("/leave", { id: roomId });
   }
 
-  public async joinRoom(data: RoomIdDTO): Promise<void> {
-    return this.post("/join", data);
+  public async getInfo(roomId: string): Promise<RoomInfo> {
+    return this.get("/info", { id: roomId });
   }
 
-  public async leaveRoom(data: RoomIdDTO): Promise<void> {
-    return this.post("/leave", data);
+  public async getState(roomId: string): Promise<GameState> {
+    return this.get("/state", { id: roomId });
   }
 }

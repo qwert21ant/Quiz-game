@@ -109,17 +109,28 @@
         </v-card-text>
       </v-card>
     </v-container>
+    <v-container
+      v-if="roomState.open"
+      max-width="1000px"
+      class="pt-0 d-flex justify-end"
+    >
+      <v-btn
+        text="Начать"
+        :disabled="roomState.participants.length === 0"
+        @click="startGame"
+      />
+    </v-container>
   </div>
 </template>
 
 <script lang="ts">
-import RoomConfig from '@/models/RoomConfig';
+import RoomConfig from '@/models/room/RoomConfig';
 import UserData from '@/models/UserData';
 import RoomAdminService from '@/services/RoomAdminService';
 import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
 import router from '@/router';
-import RoomState from '@/models/RoomState';
+import RoomState from '@/models/room/RoomState';
 
 export default defineComponent({
   name: "Room",
@@ -139,7 +150,7 @@ export default defineComponent({
   },
   computed: {
     quizNames() {
-      return this.userData.quizes.map(q => q.name);
+      return this.userData.quizzes.map(q => q.name);
     },
   },
   methods: {
@@ -168,10 +179,20 @@ export default defineComponent({
       await this.refreshState();
 
       clearInterval(this.stateRefreshTimer);
+      this.stateRefreshTimer = null;
     },
     async kickParticipant(participant: string) {
       await this.roomService.kickParticipant({ participant });
-    }
+    },
+    async startGame() {
+      await this.roomService.startGame();
+
+      router.push({ path: "/game" });
+    },
+  },
+  beforeUnmount() {
+    if (this.stateRefreshTimer)
+      clearInterval(this.stateRefreshTimer);
   },
   async mounted() {
     this.userData = await this.userService.getUserData();
