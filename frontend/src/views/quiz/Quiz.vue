@@ -31,6 +31,7 @@
         v-if="ind === editQuestionInd"
         :question="question"
         @save="q => saveQuestion(ind, q)"
+        @cancel="cancelQuestion"
       />
       <QuizQuestionCard
         v-else
@@ -44,6 +45,7 @@
       v-if="newQuestion"
       :question="newQuestion"
       @save="saveNewQuestion"
+      @cancel="cancelNewQuestion"
     />
     <v-container
       v-if="!newQuestion"
@@ -118,6 +120,12 @@ export default defineComponent({
 
       this.quiz.questions[ind] = question;
       this.editQuestionInd = null;
+    },
+    cancelQuestion() {
+      this.editQuestionInd = null;
+    },
+    cancelNewQuestion() {
+      this.newQuestion = null;
     },
   },
   async mounted() {
