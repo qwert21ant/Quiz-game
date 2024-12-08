@@ -9,4 +9,7 @@ public class RoomConfig {
 
   [JsonPropertyName("maxParticipants")]
   public required int MaxParticipants { get; set; }
+
+  [JsonPropertyName("nextQuestionAutoMode")]
+  public bool NextQuestionAutoMode { get; set; } = true;
 }

@@ -1,16 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 /*
 State changes:
 
-Waiting -> Question -> Results
-            |    ^
-            v    |
-            Answer
+Waiting -[NextQuestion]> Question -[GoToResults]> Results -[EndGame]> *room closed*
+                          |    ^
+              [NextQuestion]  [FinishQuestion]
+                          v    |
+                          Answer
 */
 
 public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
@@ -65,6 +67,9 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
   }
 
   public async Task SelectNextQuestion(string user, int questionInd) {
+    if ((await roomService.GetRoomConfig(user)).NextQuestionAutoMode)
+      throw new ServiceException("You are not allowed to select question in auto mode");
+    
     if (Value.Games[user].StateType != GameStateType.Waiting && Value.Games[user].StateType != GameStateType.Answer)
       throw new ServiceException("Incorrect state");
     
@@ -78,7 +83,14 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       throw new ServiceException("Incorrect state");
     
     var roomConfig = await roomService.GetRoomConfig(user);
-    var question = (await quizService.GetQuiz(user, roomConfig.QuizId!)).Questions[Value.Games[user].NextQuestionInd];
+    var quiz = await quizService.GetQuiz(user, roomConfig.QuizId!);
+
+    if (roomConfig.NextQuestionAutoMode && Value.Games[user].NextQuestionInd == quiz.Questions.Count) {
+      await GoToResults(user);
+      return;
+    }
+
+    var question = quiz.Questions[Value.Games[user].NextQuestionInd];
 
     await Mutate(value => {
       value.Games[user].StateType = GameStateType.Question;
@@ -115,13 +127,23 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
     if (gameState.ParticipantsAnswers!.ContainsKey(user))
       throw new ServiceException("You already answered");
     
-    // todo: check answer
+    if (
+      gameState.Question!.Type == QuizQuestionType.Text && answer.Answer == null
+      || gameState.Question!.Type == QuizQuestionType.Choise && (
+        answer.AnswerOptionInd == null || answer.AnswerOptionInd < 0
+        || answer.AnswerOptionInd > gameState.Question!.Options!.Length
+      )
+    )
+      throw new ServiceException("Incorrect answer format");
+
+    if (gameState.Question!.Type == QuizQuestionType.Choise)
+      answer.Answer = gameState.Question.Options![(int) answer.AnswerOptionInd!];
 
     await Mutate(value => {
       value.Games[owner].ParticipantsAnswers!.Add(user, answer);
     });
 
-    if (Value.Games[owner].ParticipantsAnswers!.Count == Value.Games[owner].Results!.Leaderboard!.Count)
+    if (gameState.ParticipantsAnswers!.Count == gameState.Results!.Leaderboard!.Count)
       await FinishQuestion(owner);
   }
 
@@ -144,14 +166,37 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       Question = gameState.StateType == GameStateType.Answer || gameState.StateType == GameStateType.Question
         ? gameState.Question : null,
       Results = gameState.StateType == GameStateType.Results
-        ? gameState.Results : null,
+        ? new GameResults {
+          Score = gameState.Results.Leaderboard[user],
+          Place = gameState.Results.ParticipantsPlaces![user],
+        } : null,
     };
   }
 
+  public async Task GoToResults(string user) {
+    if (Value.Games[user].StateType == GameStateType.Question)
+      throw new ServiceException("Incorrect state");
+
+    await Mutate(value => {
+      value.Games[user].StateType = GameStateType.Results;
+      value.Games[user].Results!.ParticipantsPlaces =
+        value.Games[user].Results!.Leaderboard!
+        .OrderByDescending(entry => entry.Value)
+        .Select((entry, index) => new {
+          entry.Key,
+          Value = index + 1,
+        })
+        .ToDictionary(x => x.Key, x => x.Value);
+    });
+  }
+
   public async Task FinishQuestion(string user) {
+    var isAutoMode = (await roomService.GetRoomConfig(user)).NextQuestionAutoMode;
+
     await Mutate(value => {
       value.Games[user].StateType = GameStateType.Answer;
-      value.Games[user].NextQuestionInd++;
+      if (isAutoMode)
+        value.Games[user].NextQuestionInd++;
     });
   }
 

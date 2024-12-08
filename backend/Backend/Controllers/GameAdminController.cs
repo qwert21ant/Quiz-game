@@ -45,6 +45,14 @@ public class GameAdminController : Controller {
     return Ok();
   }
 
+  [HttpPost("gotoResults")]
+  public async Task<IActionResult> GoToResults() {
+    var user = HttpContext.User.Identity!.Name!;
+
+    await gameService.GoToResults(user);
+    return Ok();
+  }
+
   [HttpGet("state")]
   public async Task<IActionResult> GetState() {
     var user = HttpContext.User.Identity!.Name!;

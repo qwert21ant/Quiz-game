@@ -22,6 +22,10 @@ export default class GameAdminService extends AuthServiceBase {
     return this.post("/nextQuestion");
   }
 
+  public async goToResults(): Promise<void> {
+    return this.post("/gotoResults");
+  }
+
   public async getState(): Promise<GameState> {
     return this.get("/state");
   }

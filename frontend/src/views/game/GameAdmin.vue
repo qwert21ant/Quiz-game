@@ -21,6 +21,36 @@
         </v-card-text>
       </v-card>
     </v-container>
+    <v-container max-width="1000px">
+      <v-card>
+        <v-card-title>Таблица лидеров</v-card-title>
+        <v-card-text>
+          <v-table class="leaderboard">
+            <colgroup>
+              <col span="1" style="width: 5%;">
+              <col span="1" style="width: 70%;">
+              <col span="1" style="width: 15%;">
+            </colgroup>
+            <thead class="text-h6">
+              <tr>
+                <th>№</th>
+                <th>Участник</th>
+                <th>Счёт</th>
+              </tr>
+            </thead>
+            <tbody class="text-subtitle-1">
+              <tr
+                v-for="(data, ind) in leaderboard"
+              >
+                <td class="text-center">{{ ind + 1 }}</td>
+                <td>{{ data.participant }}</td>
+                <td>{{ data.score }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+        </v-card-text>
+      </v-card>
+    </v-container>
     <v-container
       v-if="gameState.type == GameStateType.Question || gameState.type == GameStateType.Answer"
       max-width="1000px"
@@ -37,8 +67,8 @@
               <div style="overflow-x: hidden; text-overflow: ellipsis;">{{ answer.participant }}: {{ answer.answer }}</div>
               <v-icon
                 class="ml-2"
-                :color="isAnswerCorrect(answer.answer) ? 'success' : 'error'"
-                :icon="isAnswerCorrect(answer.answer) ? 'mdi-check' : 'mdi-close'"
+                :color="isAnswerCorrect(answer.participant) ? 'success' : 'error'"
+                :icon="isAnswerCorrect(answer.participant) ? 'mdi-check' : 'mdi-close'"
                 size="small"
                 variant="plain"
               />
@@ -48,37 +78,15 @@
       </v-card>
     </v-container>
     <v-container max-width="1000px">
-      <v-card
-        v-if="gameState.type == GameStateType.Waiting"
-      >
-        <v-card-title>Выберите следующий вопрос</v-card-title>
-        <v-card-text class="pb-0">
-          <v-select
-            v-model="nextQuestionInd"
-            label="Следующий вопрос"
-            :items="quizQuestions"
-          />
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn
-            text="Продолжить"
-            variant="elevated"
-            :disabled="nextQuestionInd == null"
-            @click="nextQuestion"
-          />
-        </v-card-actions>
-      </v-card>
       <div
-          v-if="gameState.type == GameStateType.Question"
-          class="d-flex flex-column align-center"
-        >
-          <v-progress-circular indeterminate size="x-large"/>
-          <div class="mt-3">Ожидание ответов участников</div>
-        </div>
-      <div v-if="gameState.type == GameStateType.Answer">
-        
-        <v-card>
+        v-if="gameState.type == GameStateType.Question"
+        class="d-flex flex-column align-center"
+      >
+        <v-progress-circular indeterminate size="x-large"/>
+        <div class="mt-3">Ожидание ответов участников</div>
+      </div>
+      <div v-if="gameState.type == GameStateType.Answer || gameState.type == GameStateType.Waiting">
+        <v-card v-if="!roomConfig.nextQuestionAutoMode">
           <v-card-title>Выберите следующий вопрос</v-card-title>
           <v-card-text class="pb-0">
             <v-select
@@ -90,12 +98,25 @@
           <v-card-actions>
             <v-spacer />
             <v-btn
+              text="Перейти к результатам"
+              variant="outlined"
+              @click="goToResults"
+            />
+            <v-btn
               text="Продолжить"
               variant="elevated"
               @click="nextQuestion"
             />
           </v-card-actions>
         </v-card>
+        <div v-else class="d-flex">
+          <v-spacer />
+          <v-btn
+            text="Продолжить"
+            variant="elevated"
+            @click="nextQuestionWithoutSelect"
+          />
+        </div>
       </div>
       <div v-if="gameState.type == GameStateType.Results"></div>
     </v-container>
@@ -146,14 +167,20 @@ export default defineComponent({
     participantsAnswers() {
       return Object.entries<GameAnswer>(this.gameState.participantsAnswers).map(entry => ({
         participant: entry[0],
-        answer: entry[1].answer == null ? entry[1].answerOptionInd : entry[1].answer,
+        answer: entry[1].answer,
       }));
+    },
+    leaderboard() {
+      return Object.entries<number>(this.gameState.results.leaderboard).map(entry => ({
+        participant: entry[0],
+        score: entry[1],
+      })).sort((a, b) => a.score - b.score);
     },
   },
   methods: {
-    isAnswerCorrect(answer: string | number) {
-      return this.gameState.question.type === QuizQuestionType.Text && this.gameState.answer.answer === answer
-        || this.gameState.question.type === QuizQuestionType.Choise && this.gameState.answer.answeroptionInd === answer;
+    isAnswerCorrect(participant: string) {
+      return this.gameState.question.type === QuizQuestionType.Text && this.gameState.answer.answer === this.gameState.participantsAnswers[participant].answer
+        || this.gameState.question.type === QuizQuestionType.Choise && this.gameState.answer.answerOptionInd === this.gameState.participantsAnswers[participant].answerOptionInd;
     },
     async endGame() {
       await this.gameService.endGame();
@@ -170,8 +197,15 @@ export default defineComponent({
           clearInterval(this.stateRefreshTimer);
       }
     },
+    async goToResults() {
+      await this.gameService.goToResults();
+      await this.refreshState();
+    },
     async nextQuestion() {
       await this.gameService.selectNextQuestion(this.nextQuestionInd);
+      await this.nextQuestionWithoutSelect();
+    },
+    async nextQuestionWithoutSelect() {
       await this.gameService.nextQuestion();
 
       await this.refreshState();
@@ -180,6 +214,7 @@ export default defineComponent({
   },
   async mounted() {
     this.roomConfig = await this.roomService.getConfig();
+    console.log(this.roomConfig);
     this.quiz = await this.quizService.getQuiz(this.roomConfig.quizId);
     await this.refreshState();
 

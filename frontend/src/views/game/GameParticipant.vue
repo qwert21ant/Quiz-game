@@ -80,7 +80,16 @@
           </v-card-actions>
         </v-card>
       </v-container>
-      <div v-if="gameState.type == GameStateType.Results"></div>
+      <v-container
+        v-if="gameState.type == GameStateType.Results"
+        max-width="1000px"
+      >
+        <v-card>
+          <v-card-title>
+            Ваше место: <span class="text-weight-bold">{{ gameState.results.place }}</span>
+          </v-card-title>
+        </v-card>
+      </v-container>
     </div>
   </div>
 </template>
@@ -148,6 +157,9 @@ export default defineComponent({
       this.gameState = await this.gameService.getState(this.$route.params.id);
       if (prevStateType !== this.gameState.type) {
         this.answered = false;
+
+        if (this.gameState.type === GameStateType.Results)
+          clearInterval(this.stateRefreshTimer);
       }
     },
     async doAnswer() {
@@ -173,8 +185,7 @@ export default defineComponent({
       this.stateRefreshTimer = setInterval(() => this.refreshIsGameRunning(), 2000);
   },
   beforeUnmount() {
-    if (this.stateRefreshTimer)
-      clearInterval(this.stateRefreshTimer);
+    clearInterval(this.stateRefreshTimer);
   },
 });
 </script>

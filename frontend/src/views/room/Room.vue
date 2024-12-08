@@ -32,22 +32,38 @@
             v-model="roomConfig.info.name"
             label="Name"
             :rules="[notEmptyRule]"
+            :disabled="roomState.isGameRunning"
           />
           <v-text-field
             v-model="roomConfig.info.description"
             label="Description"
+            :disabled="roomState.isGameRunning"
           />
           <v-select
             v-model="roomConfig.quizId"
             label="Quiz"
             :items="quizSelect"
             :rules="[notEmptyRule]"
+            :disabled="roomState.isGameRunning"
           />
           <v-text-field
             v-model="roomConfig.maxParticipants"
             type="number"
             label="Max participants"
+            :disabled="roomState.isGameRunning"
           />
+          <div class="text-body-1">
+            <div>Выбор вопроса:</div>
+            <div class="ml-3 d-flex align-center">
+              <div>Вручную</div>
+              <v-switch
+                v-model="roomConfig.nextQuestionAutoMode"
+                class="mx-3"
+                hide-details
+              />
+              <div>Автоматически</div>
+            </div>
+          </div>
         </v-card-text>
         <v-card-actions>
           <v-btn
@@ -65,7 +81,7 @@
             variant="flat"
             prepend-icon="mdi-content-save"
             text="Обновить"
-            :disabled="!isValid"
+            :disabled="!isValid || roomState.isGameRunning"
             @click="updateConfig"
           />
           <v-btn
@@ -74,6 +90,7 @@
             color="error"
             prepend-icon="mdi-close"
             text="Закрыть"
+            :disabled="roomState.isGameRunning"
             @click="closeRoom"
           />
         </v-card-actions>
@@ -100,6 +117,7 @@
               <v-card-title class="d-flex justify-space-between align-center">
                 <div style="overflow-x: hidden; text-overflow: ellipsis;">{{ participant }}</div>
                 <v-btn
+                  v-if="!roomState.isGameRunning"
                   class="ml-2"
                   color="error"
                   icon="mdi-close"
@@ -119,9 +137,15 @@
       class="pt-0 d-flex justify-end"
     >
       <v-btn
+        v-if="!roomState.isGameRunning"
         text="Начать"
         :disabled="roomState.participants.length === 0"
         @click="startGame"
+      />
+      <v-btn
+        v-if="roomState.isGameRunning"
+        text="Перейти к игре"
+        to="/game"
       />
     </v-container>
   </div>

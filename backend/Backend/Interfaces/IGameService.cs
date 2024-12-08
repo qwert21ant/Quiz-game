@@ -9,6 +9,7 @@ public interface IGameService {
   Task<GameState> GetAdminGameState(string user);
   Task SelectNextQuestion(string user, int questionInd);
   Task NextQuestion(string user);
+  Task GoToResults(string user);
 
   // participant
   Task Answer(string user, string roomId, GameAnswer answer);

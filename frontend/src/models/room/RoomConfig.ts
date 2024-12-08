@@ -4,4 +4,5 @@ export default interface RoomConfig {
   info: RoomInfo;
   quizId?: string;
   maxParticipants: number;
+  nextQuestionAutoMode: boolean;
 }
