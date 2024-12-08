@@ -54,10 +54,10 @@ public class RoomAdminController : Controller {
   }
 
   [HttpPost("kick")]
-  public async Task<IActionResult> KickParticipant([FromBody] KickParticipantDTO data) {
+  public async Task<IActionResult> KickParticipant([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.KickParticipant(user, data.Participant);
+    await roomService.KickParticipant(user, data.Value);
     return Ok();
   }
 }

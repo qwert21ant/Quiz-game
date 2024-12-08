@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService {
-  
   public QuizService(IOptions<StorageSettings> settings)
     : base(Path.Join(settings.Value.RootDir, "quizzes.json"), new ())
     {}
@@ -17,6 +16,10 @@ public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService 
     await Mutate(value => {
       value.Quizzes.Add(user, new ());
     });
+  }
+
+  public async Task<bool> HasQuiz(string user, string quizId) {
+    return Value.Quizzes[user].ContainsKey(quizId);
   }
 
   public async Task<string> CreateQuiz(string user, string quizName) {

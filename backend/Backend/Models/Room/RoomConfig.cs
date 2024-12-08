@@ -4,8 +4,8 @@ public class RoomConfig {
   [JsonPropertyName("info")]
   public required RoomInfo Info { get; set; }
 
-  [JsonPropertyName("quizName")]
-  public string? QuizName { get; set; }
+  [JsonPropertyName("quizId")]
+  public string? QuizId { get; set; }
 
   [JsonPropertyName("maxParticipants")]
   public required int MaxParticipants { get; set; }

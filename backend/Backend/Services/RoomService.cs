@@ -5,10 +5,12 @@ using Microsoft.Extensions.Options;
 
 public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   private Random random = new Random();
+  private IQuizService quizService;
   
-  public RoomService(IOptions<StorageSettings> settings)
-    : base(Path.Join(settings.Value.RootDir, "rooms.json"), new RoomsStorage())
-    {}
+  public RoomService(IOptions<StorageSettings> settings, IQuizService quizService)
+    : base(Path.Join(settings.Value.RootDir, "rooms.json"), new RoomsStorage()) {
+    this.quizService = quizService;
+  }
 
   public async Task InitUser(string user) {
     if (Value.Rooms.ContainsKey(user))
@@ -22,11 +24,28 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
           },
           MaxParticipants = 10
         },
-        State = new RoomState {
-          Open = false
-        }
+        State = new ()
       });
     });
+  }
+
+  public async Task StartGame(string user) {
+    if (Value.Rooms[user].State.IsGameRunning)
+      throw new ServiceException("Game is already running");
+
+    if (Value.Rooms[user].State.Participants.Count == 0)
+      throw new ServiceException("Can't start game in empty room");
+
+    await Mutate(value => {
+      value.Rooms[user].State.IsGameRunning = true;
+    });
+  }
+
+  public async Task EndGame(string user) {
+    if (!Value.Rooms[user].State.IsGameRunning)
+      throw new ServiceException("Game is not running");
+
+    await CloseRoom(user);
   }
 
   public async Task<RoomConfig> GetRoomConfig(string user) {
@@ -34,6 +53,12 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   public async Task UpdateConfig(string user, RoomConfig roomConfig) {
+    if (roomConfig.QuizId == null)
+      throw new ServiceException("quizId is null");
+    
+    if (!await quizService.HasQuiz(user, roomConfig.QuizId))
+      throw new ServiceException("There is no quiz with id " + roomConfig.QuizId);
+
     await Mutate(value => {
       value.Rooms[user].Config = roomConfig;
     });
@@ -44,12 +69,15 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   }
 
   public async Task OpenRoom(string user) {
-    if (Value.Rooms[user].State.Open)
+    if (Value.Rooms[user].State.IsOpen)
       throw new ServiceException("Room already opened");
+    
+    if (!await quizService.HasQuiz(user, Value.Rooms[user].Config.QuizId!))
+      throw new ServiceException("There is no quiz with id " + Value.Rooms[user].Config.QuizId);
 
     await Mutate(value => {
       var id = GetUniqueRoomID();
-      value.Rooms[user].State.Open = true;
+      value.Rooms[user].State.IsOpen = true;
       value.Rooms[user].State.Id = id;
       value.RoomIdToUser.Add(id, user);
     });
@@ -58,9 +86,7 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   public async Task CloseRoom(string user) {
     await Mutate(value => {
       var id = value.Rooms[user].State.Id!;
-      value.Rooms[user].State = new RoomState {
-        Open = false,
-      };
+      value.Rooms[user].State = new ();
       value.RoomIdToUser.Remove(id);
     });
   }
@@ -107,6 +133,11 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
       throw new ServiceException("You are not in room");
     
     return (await GetRoomConfig(owner)).Info;
+  }
+
+  public async Task<bool> GetIsGameRunning(string user, string roomId) {
+    var owner = await GetRoomOwner(roomId);
+    return Value.Rooms[owner].State.IsGameRunning;
   }
 
   public async Task<string> GetRoomOwner(string roomId) {

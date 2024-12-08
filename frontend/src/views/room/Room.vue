@@ -31,15 +31,17 @@
           <v-text-field
             v-model="roomConfig.info.name"
             label="Name"
+            :rules="[notEmptyRule]"
           />
           <v-text-field
             v-model="roomConfig.info.description"
             label="Description"
           />
           <v-select
-            v-model="roomConfig.quizName"
+            v-model="roomConfig.quizId"
             label="Quiz"
-            :items="quizNames"
+            :items="quizSelect"
+            :rules="[notEmptyRule]"
           />
           <v-text-field
             v-model="roomConfig.maxParticipants"
@@ -49,23 +51,25 @@
         </v-card-text>
         <v-card-actions>
           <v-btn
-            v-if="!roomState.open"
+            v-if="!roomState.isOpen"
             class="ml-auto"
             variant="flat"
             prepend-icon="mdi-door-open"
             text="Открыть"
+            :disabled="!isValid"
             @click="openRoom"
           />
           <v-btn
-            v-if="roomState.open"
+            v-if="roomState.isOpen"
             class="ml-auto"
             variant="flat"
             prepend-icon="mdi-content-save"
             text="Обновить"
+            :disabled="!isValid"
             @click="updateConfig"
           />
           <v-btn
-            v-if="roomState.open"
+            v-if="roomState.isOpen"
             variant="outlined"
             color="error"
             prepend-icon="mdi-close"
@@ -76,7 +80,7 @@
       </v-card>
     </v-container>
     <v-container
-      v-if="roomState.open"
+      v-if="roomState.isOpen"
       max-width="1000px"
     >
       <v-card>
@@ -110,7 +114,7 @@
       </v-card>
     </v-container>
     <v-container
-      v-if="roomState.open"
+      v-if="roomState.isOpen"
       max-width="1000px"
       class="pt-0 d-flex justify-end"
     >
@@ -131,13 +135,18 @@ import UserService from '@/services/UserService';
 import { defineComponent } from 'vue';
 import router from '@/router';
 import RoomState from '@/models/room/RoomState';
+import { notEmptyRule } from '@/utils/rules';
+import GameAdminService from '@/services/GameAdminService';
 
 export default defineComponent({
   name: "Room",
   data() {
     return {
+      notEmptyRule,
+
       userService: new UserService(),
       roomService: new RoomAdminService(),
+      gameService: new GameAdminService(),
 
       userData: null as UserData,
       roomConfig: null as RoomConfig,
@@ -149,8 +158,16 @@ export default defineComponent({
     };
   },
   computed: {
-    quizNames() {
-      return this.userData.quizzes.map(q => q.name);
+    quizSelect() {
+      return this.userData.quizzes.map(q => ({
+        title: q.name,
+        value: q.id,
+      }));
+    },
+    isValid() {
+      return notEmptyRule(this.roomConfig.info.name) === true
+        && this.roomConfig.quizId
+        && notEmptyRule(this.roomConfig.quizId) === true;
     },
   },
   methods: {
@@ -182,10 +199,10 @@ export default defineComponent({
       this.stateRefreshTimer = null;
     },
     async kickParticipant(participant: string) {
-      await this.roomService.kickParticipant({ participant });
+      await this.roomService.kickParticipant(participant);
     },
     async startGame() {
-      await this.roomService.startGame();
+      await this.gameService.startGame();
 
       router.push({ path: "/game" });
     },
@@ -197,6 +214,9 @@ export default defineComponent({
   async mounted() {
     this.userData = await this.userService.getUserData();
     this.roomConfig = await this.roomService.getConfig();
+    if (!this.userData.quizzes.map(q => q.id).includes(this.roomConfig.quizId))
+      this.roomConfig.quizId = null;
+
     this.roomState = await this.roomService.getState();
 
     if (this.roomState.open)

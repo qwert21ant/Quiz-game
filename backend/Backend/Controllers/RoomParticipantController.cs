@@ -14,26 +14,36 @@ public class RoomParticipantController : Controller {
   }
 
   [HttpPost("join")]
-  public async Task<IActionResult> JoinRoom([FromBody] RoomIdDTO data) {
+  public async Task<IActionResult> JoinRoom([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.JoinRoom(user, data.Id);
+    await roomService.JoinRoom(user, data.Value);
     return Ok();
   }
 
   [HttpPost("leave")]
-  public async Task<IActionResult> LeaveRoom([FromBody] RoomIdDTO data) {
+  public async Task<IActionResult> LeaveRoom([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.LeaveRoom(user, data.Id);
+    await roomService.LeaveRoom(user, data.Value);
     return Ok();
   }
 
   [HttpGet("info")]
-  public async Task<IActionResult> GetInfo([FromQuery] RoomIdDTO data) {
+  public async Task<IActionResult> GetInfo([FromQuery] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    var info = await roomService.GetRoomInfo(user, data.Id);
+    var info = await roomService.GetRoomInfo(user, data.Value);
     return Json(info);
+  }
+
+  [HttpGet("isGameRunning")]
+  public async Task<IActionResult> GetIsGameRunning([FromQuery] StringDTO data) {
+    var user = HttpContext.User.Identity!.Name!;
+
+    var res = await roomService.GetIsGameRunning(user, data.Value);
+    return Json(new NumberDTO {
+      Value = res ? 1 : 0,
+    });
   }
 }

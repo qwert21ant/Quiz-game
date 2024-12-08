@@ -1,5 +1,6 @@
 export default interface RoomState {
-  open: boolean;
+  isOpen: boolean;
+  isGameRunning: boolean;
   id?: string;
   participants: string[];
 }

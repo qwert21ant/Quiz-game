@@ -14,6 +14,9 @@ public class GameState {
   [JsonPropertyName("results")]
   public GameResults? Results { get; set; }
 
-  [JsonPropertyName("allAnswers")]
-  public Dictionary<string, GameAnswer>? Answers { get; set; }
+  [JsonPropertyName("nextQuestionInd")]
+  public int NextQuestionInd { get; set; } = 0;
+
+  [JsonPropertyName("participantsAnswers")]
+  public Dictionary<string, GameAnswer>? ParticipantsAnswers { get; set; }
 }

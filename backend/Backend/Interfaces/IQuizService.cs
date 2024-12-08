@@ -1,7 +1,9 @@
+using System;
 using System.Threading.Tasks;
 
 public interface IQuizService {
   Task InitUser(string user);
+  Task<bool> HasQuiz(string user, string quizId);
 
   Task<string> CreateQuiz(string user, string quizName);
   Task RemoveQuiz(string user, string quizId);

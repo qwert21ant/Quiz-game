@@ -8,10 +8,10 @@ public class QuizQuestion {
   public required string Text { get; set; }
 
   [JsonPropertyName("answer")]
-  public object? Answer { get; set; }
+  public string? Answer { get; set; }
 
   [JsonPropertyName("options")]
-  public object[]? Options { get; set; }
+  public string[]? Options { get; set; }
 
   [JsonPropertyName("answerOptionInd")]
   public int? AnswerOptionInd { get; set; }

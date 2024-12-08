@@ -1,7 +1,6 @@
 import RoomConfig from "@/models/room/RoomConfig";
 import AuthServiceBase from "./AuthServiceBase";
 import RoomState from "@/models/room/RoomState";
-import KickParticipantDTO from "@/models/room/KickParticipantDTO";
 
 export default class RoomAdminService extends AuthServiceBase {
   public constructor() {
@@ -28,8 +27,8 @@ export default class RoomAdminService extends AuthServiceBase {
     return this.post("/close");
   }
 
-  public async kickParticipant(data: KickParticipantDTO): Promise<void> {
-    return this.post("/kick", data);
+  public async kickParticipant(user: string): Promise<void> {
+    return this.post("/kick", { value: user });
   }
 
   public async startGame(): Promise<void> {

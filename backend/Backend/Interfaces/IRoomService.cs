@@ -2,6 +2,8 @@ using System.Threading.Tasks;
 
 public interface IRoomService {
   Task InitUser(string user);
+  Task StartGame(string user);
+  Task EndGame(string user);
   
   // admin
   Task<RoomConfig> GetRoomConfig(string user);
@@ -16,6 +18,7 @@ public interface IRoomService {
   Task JoinRoom(string user, string roomId);
   Task LeaveRoom(string user, string roomId);
   Task<RoomInfo> GetRoomInfo(string user, string roomId);
+  Task<bool> GetIsGameRunning(string user, string roomId);
 
   // other
   Task<string> GetRoomOwner(string roomId);

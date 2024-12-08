@@ -2,6 +2,6 @@ import RoomInfo from "./RoomInfo";
 
 export default interface RoomConfig {
   info: RoomInfo;
-  quizName?: string;
+  quizId?: string;
   maxParticipants: number;
 }

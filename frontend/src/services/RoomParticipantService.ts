@@ -1,6 +1,5 @@
 import AuthServiceBase from "./AuthServiceBase";
 import RoomInfo from "@/models/room/RoomInfo";
-import GameState from "@/models/GameState";
 
 export default class RoomParticipantService extends AuthServiceBase {
   public constructor() {
@@ -8,18 +7,18 @@ export default class RoomParticipantService extends AuthServiceBase {
   }
 
   public async joinRoom(roomId: string): Promise<void> {
-    return this.post("/join", { id: roomId });
+    return this.post("/join", { value: roomId });
   }
 
   public async leaveRoom(roomId: string): Promise<void> {
-    return this.post("/leave", { id: roomId });
+    return this.post("/leave", { value: roomId });
   }
 
   public async getInfo(roomId: string): Promise<RoomInfo> {
-    return this.get("/info", { id: roomId });
+    return this.get("/info", { value: roomId });
   }
 
-  public async getState(roomId: string): Promise<GameState> {
-    return this.get("/state", { id: roomId });
+  public async getIsGameRunning(roomId: string): Promise<boolean> {
+    return !!(await this.get("/isGameRunning", { value: roomId }) as any).value;
   }
 }
