@@ -102,7 +102,7 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
         QuestionAppearanceTime = CurrentTs()
       };
       value.Games[user].Answer = new GameAnswer {
-        Answer = question.Answer == null ? question.Options![(int) question.AnswerOptionInd!] : question.Answer,
+        Answer = question.Type == QuizQuestionType.Choise ? question.Options![(int) question.AnswerOptionInd!] : question.Answer,
         AnswerOptionInd = question.AnswerOptionInd,
       };
       value.Games[user].ParticipantsAnswers = new ();
@@ -141,6 +141,7 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
 
     await Mutate(value => {
       value.Games[owner].ParticipantsAnswers!.Add(user, answer);
+      value.Games[owner].Results!.Leaderboard![user] += CountScoreForAnswer(owner, answer);
     });
 
     if (gameState.ParticipantsAnswers!.Count == gameState.Results!.Leaderboard!.Count)
@@ -198,6 +199,23 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       if (isAutoMode)
         value.Games[user].NextQuestionInd++;
     });
+  }
+
+  private int CountScoreForAnswer(string user, GameAnswer answer) {
+    if (
+      Value.Games[user].Question!.Type == QuizQuestionType.Text && Value.Games[user].Answer!.Answer != answer.Answer
+      || Value.Games[user].Question!.Type == QuizQuestionType.Choise && Value.Games[user].Answer!.AnswerOptionInd != answer.AnswerOptionInd
+    )
+      return 0;
+    
+    int score = 10; // for correct answer
+    
+    int tl = Value.Games[user].Question!.TimeLimit;
+    int secsFromStart = (int) (CurrentTs() - (long) Value.Games[user].Question!.QuestionAppearanceTime!) / 1000;
+
+    score += (int) ((tl - secsFromStart) / (double) tl * 10); // for speed
+
+    return score;
   }
 
   private async Task EnsureQuestionFinished(string user) {

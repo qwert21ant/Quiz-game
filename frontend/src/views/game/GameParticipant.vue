@@ -36,7 +36,7 @@
         <v-card>
           <v-card-title>Правильный ответ: {{ gameState.answer.answer }}</v-card-title>
           <v-card-text v-if="answer">
-            Ваш ответ: <span class="text-error">{{ answer }}</span>
+            Ваш ответ: <span class="text-waight-bold">{{ answer }}</span>
           </v-card-text>
         </v-card>
       </v-container>
@@ -141,7 +141,8 @@ export default defineComponent({
   },
   methods: {
     async leaveRoom() {
-      await this.roomService.leaveRoom(this.$route.params.id);
+      if (this.gameState.type !== GameStateType.Results)
+        await this.roomService.leaveRoom(this.$route.params.id);
 
       router.push({ path: "/dashboard" });
     },

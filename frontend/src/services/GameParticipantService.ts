@@ -1,9 +1,9 @@
 import RoomConfig from "@/models/room/RoomConfig";
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import GameAnswer from "@/models/game/GameAnswer";
 import GameState from "@/models/game/GameState";
 
-export default class GameParticipantService extends AuthServiceBase {
+export default class GameParticipantService extends CommonServiceBase {
   public constructor() {
     super("/game/participant");
   }

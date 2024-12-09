@@ -1,8 +1,8 @@
 import QuizQuestion from "@/models/quiz/QuizQuestion";
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import Quiz from "@/models/quiz/Quiz";
 
-export default class QuizService extends AuthServiceBase {
+export default class QuizService extends CommonServiceBase {
   public constructor() {
     super("/quiz");
   }

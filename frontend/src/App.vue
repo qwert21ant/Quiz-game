@@ -43,7 +43,7 @@ export default defineComponent({
     snackbarIcon() {
       if (!this.message) return "";
       if (this.message.type === "error")
-        return "mdi-alert-circle"
+        return "mdi-alert-circle";
     },
     snackbarColor() {
       if (!this.message) return "";

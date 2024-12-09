@@ -1,7 +1,7 @@
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import GameState from "@/models/game/GameState";
 
-export default class GameAdminService extends AuthServiceBase {
+export default class GameAdminService extends CommonServiceBase {
   public constructor() {
     super("/game/admin");
   }

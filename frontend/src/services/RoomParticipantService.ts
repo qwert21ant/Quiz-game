@@ -1,7 +1,7 @@
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import RoomInfo from "@/models/room/RoomInfo";
 
-export default class RoomParticipantService extends AuthServiceBase {
+export default class RoomParticipantService extends CommonServiceBase {
   public constructor() {
     super("/room/participant");
   }

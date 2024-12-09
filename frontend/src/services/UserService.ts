@@ -1,7 +1,7 @@
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import UserData from "@/models/UserData";
 
-export default class UserService extends AuthServiceBase {
+export default class UserService extends CommonServiceBase {
   public constructor() {
     super("/user");
   }

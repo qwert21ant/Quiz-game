@@ -3,7 +3,7 @@ import ServiceBase from "./ServiceBase";
 import router from "@/router";
 import { AxiosError } from "axios";
 
-export default class AuthServiceBase extends ServiceBase {
+export default class CommonServiceBase extends ServiceBase {
   protected constructor(path: string) {
     super(path);
   }
@@ -18,6 +18,11 @@ export default class AuthServiceBase extends ServiceBase {
         if (error.status === 401) {
           messageBus.error("Unauthorized");
           router.push({ path: "/auth" });
+        } else if (error.status === 400) {
+          let msg = error.message;
+          if (error.response.data)
+            msg += ". " + error.response.data;
+          messageBus.error(msg);
         }
       }
 
@@ -35,6 +40,11 @@ export default class AuthServiceBase extends ServiceBase {
         if (error.status === 401) {
           messageBus.error("Unauthorized");
           router.push({ path: "/auth" });
+        } else if (error.status === 400) {
+          let msg = error.message;
+          if (error.response.data)
+            msg += ". " + error.response.data;
+          messageBus.error(msg);
         }
       }
 

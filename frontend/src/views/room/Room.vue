@@ -60,6 +60,7 @@
                 v-model="roomConfig.nextQuestionAutoMode"
                 class="mx-3"
                 hide-details
+                :disabled="roomState.isGameRunning"
               />
               <div>Автоматически</div>
             </div>

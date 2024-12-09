@@ -1,8 +1,8 @@
 import RoomConfig from "@/models/room/RoomConfig";
-import AuthServiceBase from "./AuthServiceBase";
+import CommonServiceBase from "./CommonServiceBase";
 import RoomState from "@/models/room/RoomState";
 
-export default class RoomAdminService extends AuthServiceBase {
+export default class RoomAdminService extends CommonServiceBase {
   public constructor() {
     super("/room/admin");
   }

@@ -110,6 +110,9 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
 
     if (Value.Rooms[owner].State.Participants.Contains(user))
       throw new ServiceException("You are already joined room");
+    
+    if (Value.Rooms[owner].Config.MaxParticipants == Value.Rooms[owner].State.Participants.Count)
+      throw new ServiceException("Room is full");
 
     await Mutate(value => {
       value.Rooms[owner].State.Participants.Add(user);

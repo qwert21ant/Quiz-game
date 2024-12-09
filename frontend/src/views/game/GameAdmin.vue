@@ -58,22 +58,28 @@
       <v-card>
         <v-card-title>Ответы участников</v-card-title>
         <v-card-text>
-          <v-card
-            v-for="answer in participantsAnswers"
-            class="ma-1"
-            width="250"
-          >
-            <v-card-title class="d-flex justify-space-between align-center">
-              <div style="overflow-x: hidden; text-overflow: ellipsis;">{{ answer.participant }}: {{ answer.answer }}</div>
-              <v-icon
-                class="ml-2"
-                :color="isAnswerCorrect(answer.participant) ? 'success' : 'error'"
-                :icon="isAnswerCorrect(answer.participant) ? 'mdi-check' : 'mdi-close'"
-                size="small"
-                variant="plain"
-              />
-            </v-card-title>
-          </v-card>
+          <div v-if="!participantsAnswers.length">
+            Нет ответов
+          </div>
+          <div v-else class="d-flex flex-wrap">
+            <v-card
+              v-for="answer in participantsAnswers"
+              class="ma-1"
+              width="250"
+            >
+              <v-card-title class="d-flex justify-space-between align-center">
+                <div style="overflow-x: hidden; text-overflow: ellipsis;">{{ answer.participant }}: {{ answer.answer }}</div>
+                <v-icon
+                  class="ml-2"
+                  :color="isAnswerCorrect(answer.participant) ? 'success' : 'error'"
+                  :icon="isAnswerCorrect(answer.participant) ? 'mdi-check' : 'mdi-close'"
+                  size="small"
+                  variant="plain"
+                />
+              </v-card-title>
+            </v-card>
+          </div>
+          
         </v-card-text>
       </v-card>
     </v-container>
