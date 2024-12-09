@@ -7,7 +7,7 @@ using Microsoft.Extensions.Options;
 public class CredentialsService : JsonPersistenceService<Dictionary<string, string>>, ICredentialsService {
   private IPasswordHasher<string> hasher = new PasswordHasher<string>();
 
-  public CredentialsService(IOptions<StorageSettings> settings)
+  public CredentialsService(IOptions<AppSettings> settings)
     : base(Path.Join(settings.Value.RootDir, "credentials.json"), new Dictionary<string, string>())
     {}
 

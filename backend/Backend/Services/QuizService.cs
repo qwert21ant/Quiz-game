@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService {
-  public QuizService(IOptions<StorageSettings> settings)
+  public QuizService(IOptions<AppSettings> settings)
     : base(Path.Join(settings.Value.RootDir, "quizzes.json"), new ())
     {}
 

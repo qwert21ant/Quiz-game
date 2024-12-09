@@ -7,7 +7,7 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   private Random random = new Random();
   private IQuizService quizService;
   
-  public RoomService(IOptions<StorageSettings> settings, IQuizService quizService)
+  public RoomService(IOptions<AppSettings> settings, IQuizService quizService)
     : base(Path.Join(settings.Value.RootDir, "rooms.json"), new RoomsStorage()) {
     this.quizService = quizService;
   }

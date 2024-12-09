@@ -3,14 +3,19 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
 public class Program {
   public static void Main(string[] args) {
-    var builder = WebApplication.CreateBuilder(args);
+    var builder = WebApplication.CreateBuilder(new WebApplicationOptions {
+      Args = args,
+      WebRootPath = "../../frontend/dist"
+    });
 
-    builder.Services.Configure<StorageSettings>(builder.Configuration.GetSection("StorageSettings"));
+    builder.Services.Configure<AppSettings>(builder.Configuration.GetSection("AppSettings"));
 
     builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
       .AddCookie(options => {
@@ -25,35 +30,36 @@ public class Program {
     
     builder.Services.AddAuthorization();
 
-    builder.Services.AddSingleton<ICredentialsService, CredentialsService>();
-    builder.Services.AddSingleton<IUserService, UserService>();
-    builder.Services.AddSingleton<IQuizService, QuizService>();
-    builder.Services.AddSingleton<IRoomService, RoomService>();
-    builder.Services.AddSingleton<IGameService, GameService>();
+    builder.Services
+      .AddSingleton<ICredentialsService, CredentialsService>()
+      .AddSingleton<IUserService, UserService>()
+      .AddSingleton<IQuizService, QuizService>()
+      .AddSingleton<IRoomService, RoomService>()
+      .AddSingleton<IGameService, GameService>();
 
     builder.Services.AddControllers();
 
     var app = builder.Build();
 
-    var rootDir = app.Services.GetRequiredService<IOptions<StorageSettings>>().Value.RootDir;
+    var rootDir = app.Services.GetRequiredService<IOptions<AppSettings>>().Value.RootDir;
     Directory.CreateDirectory(rootDir);
 
-    app.UseCors(builder => builder
-      .WithOrigins(["http://localhost:5089"])
-      .AllowAnyHeader()
-      .AllowCredentials());
-
-    app.UseAuthentication();
+    if (app.Environment.IsDevelopment())
+      app.UseCors(builder => builder
+        .WithOrigins(["http://localhost:5089"])
+        .AllowAnyHeader()
+        .AllowCredentials());
 
     app.UseMiddleware<ServiceExceptionHandlerMiddleware>();
 
-    app.Map("/api", api => {
-      api.UseRouting();
+    app.UseRouting();
+    app.UseAuthorization();
 
-      api.UseAuthorization();
+    app.MapGroup("/api")
+      .MapControllers();
 
-      api.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-    });
+    app.UseStaticFiles();
+    app.MapFallbackToFile("index.html");
 
     app.Run();
   }

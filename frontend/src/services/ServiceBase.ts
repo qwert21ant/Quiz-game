@@ -6,7 +6,7 @@ export default class ServiceBase {
 
   protected constructor(path: string) {
     this.httpClient = axios.create({
-      baseURL: `http://localhost:5099/api${path}`,
+      baseURL: `/api${path}`,
       withCredentials: true,
     });
   }

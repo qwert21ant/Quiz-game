@@ -19,7 +19,7 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
   private IRoomService roomService;
   private IQuizService quizService;
   
-  public GameService(IOptions<StorageSettings> settings, IRoomService roomService, IQuizService quizService)
+  public GameService(IOptions<AppSettings> settings, IRoomService roomService, IQuizService quizService)
     : base(Path.Join(settings.Value.RootDir, "games.json"), new GamesStorage()) {
     this.roomService = roomService;
     this.quizService = quizService;

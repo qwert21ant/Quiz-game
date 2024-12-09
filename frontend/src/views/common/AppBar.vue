@@ -1,7 +1,12 @@
 <template>
   <v-app-bar height="60" elevation="3">
     <v-app-bar-title>
-      <a href="/dashboard" style="text-decoration: none; color: black;">Quiz game</a>
+      <a
+        style="text-decoration: none; color: black; cursor: pointer;"
+        @click="goToDashboard"
+      >
+        Quiz game
+      </a>
     </v-app-bar-title>
     <template #append v-if="username">
       <v-btn class="fill-height">
@@ -48,6 +53,9 @@ export default defineComponent({
     };
   },
   methods: {
+    goToDashboard() {
+      router.push({ path: "/dashboard" });
+    },
     async logout() {
       await (new AuthService()).logout();
       messageBus.info("Logged out");
