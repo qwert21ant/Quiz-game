@@ -244,7 +244,7 @@ export default defineComponent({
 
     this.roomState = await this.roomService.getState();
 
-    if (this.roomState.open)
+    if (this.roomState.isOpen)
       this.stateRefreshTimer = setInterval(() => this.refreshState(), 2000);
 
     this.isInitialized = true;
