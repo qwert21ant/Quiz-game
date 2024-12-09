@@ -17,7 +17,7 @@ public class QuizController : Controller {
   public async Task<IActionResult> CreateQuiz([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity?.Name!;
     
-    var id = await quizService.CreateQuiz(user, data.Value);
+    var id = quizService.CreateQuiz(user, data.Value);
     return Json(new StringDTO {
       Value = id
     });
@@ -27,7 +27,7 @@ public class QuizController : Controller {
   public async Task<IActionResult> RemoveQuiz([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity?.Name!;
     
-    await quizService.RemoveQuiz(user, data.Value);
+    quizService.RemoveQuiz(user, data.Value);
     return Ok();
   }
 
@@ -38,7 +38,7 @@ public class QuizController : Controller {
     if (data.Question == null)
       throw new ServiceException("quiestion is null");
     
-    await quizService.AddQuizQuestion(user, data.QuizId, data.Question);
+    quizService.AddQuizQuestion(user, data.QuizId, data.Question);
     return Ok();
   }
 
@@ -49,7 +49,7 @@ public class QuizController : Controller {
     if (data.QuestionInd == null)
       throw new ServiceException("quiestionInd is null");
     
-    await quizService.ChangeQuizQuestion(user, data.QuizId, (int) data.QuestionInd, data.Question!);
+    quizService.ChangeQuizQuestion(user, data.QuizId, (int) data.QuestionInd, data.Question!);
     return Ok();
   }
 
@@ -60,7 +60,7 @@ public class QuizController : Controller {
     if (data.QuestionInd == null)
       throw new ServiceException("quiestionInd is null");
     
-    await quizService.RemoveQuizQuestion(user, data.QuizId, (int) data.QuestionInd);
+    quizService.RemoveQuizQuestion(user, data.QuizId, (int) data.QuestionInd);
     return Ok();
   }
 
@@ -68,7 +68,7 @@ public class QuizController : Controller {
   public async Task<IActionResult> GetQuiz([FromQuery] StringDTO data) {
     var user = HttpContext.User.Identity?.Name!;
     
-    var quiz = await quizService.GetQuiz(user, data.Value);
+    var quiz = quizService.GetQuiz(user, data.Value);
     return Json(quiz);
   }
 }

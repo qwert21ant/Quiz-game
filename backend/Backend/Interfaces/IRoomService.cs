@@ -1,25 +1,23 @@
-using System.Threading.Tasks;
-
 public interface IRoomService {
-  Task InitUser(string user);
-  Task StartGame(string user);
-  Task EndGame(string user);
+  void InitUser(string user);
+  void StartGame(string user);
+  void EndGame(string user);
   
   // admin
-  Task<RoomConfig> GetRoomConfig(string user);
-  Task UpdateConfig(string user, RoomConfig roomConfig);
+  RoomConfig GetRoomConfig(string user);
+  void UpdateConfig(string user, RoomConfig roomConfig);
 
-  Task<RoomState> GetRoomState(string user);
-  Task OpenRoom(string user);
-  Task CloseRoom(string user);
-  Task KickParticipant(string user, string participant);
+  RoomState GetRoomState(string user);
+  void OpenRoom(string user);
+  void CloseRoom(string user);
+  void KickParticipant(string user, string participant);
 
   // participant
-  Task JoinRoom(string user, string roomId);
-  Task LeaveRoom(string user, string roomId);
-  Task<RoomInfo> GetRoomInfo(string user, string roomId);
-  Task<bool> GetIsGameRunning(string user, string roomId);
+  void JoinRoom(string user, string roomId);
+  void LeaveRoom(string user, string roomId);
+  RoomInfo GetRoomInfo(string user, string roomId);
+  bool GetIsGameRunning(string user, string roomId);
 
   // other
-  Task<string> GetRoomOwner(string roomId);
+  string GetRoomOwner(string roomId);
 }

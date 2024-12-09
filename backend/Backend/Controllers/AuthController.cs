@@ -41,8 +41,8 @@ public class AuthController : Controller {
     if (credsService.Exists(creds.Username))
       return BadRequest("This username is already in use");
     
-    await credsService.Add(creds);
-    await userService.InitUser(creds.Username);
+    credsService.Add(creds);
+    userService.InitUser(creds.Username);
     await LoginInner(creds.Username);
     return Ok();
   }

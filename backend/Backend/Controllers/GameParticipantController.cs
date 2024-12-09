@@ -17,7 +17,7 @@ public class GameParticipantController : Controller {
   public async Task<IActionResult> Answer([FromBody] GameAnswerDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.Answer(user, data.RoomId, data.Answer);
+    gameService.Answer(user, data.RoomId, data.Answer);
     return Ok();
   }
 
@@ -25,7 +25,7 @@ public class GameParticipantController : Controller {
   public async Task<IActionResult> GetState([FromQuery] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    var state = await gameService.GetParticipantGameState(user, data.Value);
+    var state = gameService.GetParticipantGameState(user, data.Value);
     return Json(state);
   }
 }

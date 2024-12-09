@@ -17,7 +17,7 @@ public class RoomParticipantController : Controller {
   public async Task<IActionResult> JoinRoom([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.JoinRoom(user, data.Value);
+    roomService.JoinRoom(user, data.Value);
     return Ok();
   }
 
@@ -25,7 +25,7 @@ public class RoomParticipantController : Controller {
   public async Task<IActionResult> LeaveRoom([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.LeaveRoom(user, data.Value);
+    roomService.LeaveRoom(user, data.Value);
     return Ok();
   }
 
@@ -33,7 +33,7 @@ public class RoomParticipantController : Controller {
   public async Task<IActionResult> GetInfo([FromQuery] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    var info = await roomService.GetRoomInfo(user, data.Value);
+    var info = roomService.GetRoomInfo(user, data.Value);
     return Json(info);
   }
 
@@ -41,7 +41,7 @@ public class RoomParticipantController : Controller {
   public async Task<IActionResult> GetIsGameRunning([FromQuery] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    var res = await roomService.GetIsGameRunning(user, data.Value);
+    var res = roomService.GetIsGameRunning(user, data.Value);
     return Json(new NumberDTO {
       Value = res ? 1 : 0,
     });

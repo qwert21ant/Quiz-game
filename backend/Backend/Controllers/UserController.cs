@@ -16,6 +16,6 @@ public class UserController : Controller {
   public async Task<IActionResult> GetUserData() {
     var user = HttpContext.User.Identity!.Name!;
 
-    return Json(await userService.GetUserData(user));
+    return Json(userService.GetUserData(user));
   }
 }

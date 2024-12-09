@@ -17,7 +17,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> GetConfig() {
     var user = HttpContext.User.Identity!.Name!;
 
-    var config = await roomService.GetRoomConfig(user);
+    var config = roomService.GetRoomConfig(user);
     return Json(config);
   }
 
@@ -25,7 +25,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> UpdateConfig([FromBody] RoomConfig roomConfig) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.UpdateConfig(user, roomConfig);
+    roomService.UpdateConfig(user, roomConfig);
     return Ok();
   }
 
@@ -33,7 +33,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> GetState() {
     var user = HttpContext.User.Identity!.Name!;
 
-    var state = await roomService.GetRoomState(user);
+    var state = roomService.GetRoomState(user);
     return Json(state);
   }
 
@@ -41,7 +41,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> OpenRoom() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.OpenRoom(user);
+    roomService.OpenRoom(user);
     return Ok();
   }
 
@@ -49,7 +49,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> CloseRoom() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.CloseRoom(user);
+    roomService.CloseRoom(user);
     return Ok();
   }
 
@@ -57,7 +57,7 @@ public class RoomAdminController : Controller {
   public async Task<IActionResult> KickParticipant([FromBody] StringDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await roomService.KickParticipant(user, data.Value);
+    roomService.KickParticipant(user, data.Value);
     return Ok();
   }
 }

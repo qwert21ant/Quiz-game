@@ -17,7 +17,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> StartGame() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.StartGame(user);
+    gameService.StartGame(user);
     return Ok();
   }
 
@@ -25,7 +25,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> EndGame() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.EndGame(user);
+    gameService.EndGame(user);
     return Ok();
   }
 
@@ -33,7 +33,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> SelectNextQuestion([FromBody] NumberDTO data) {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.SelectNextQuestion(user, data.Value);
+    gameService.SelectNextQuestion(user, data.Value);
     return Ok();
   }
 
@@ -41,7 +41,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> NextQuestion() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.NextQuestion(user);
+    gameService.NextQuestion(user);
     return Ok();
   }
 
@@ -49,7 +49,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> GoToResults() {
     var user = HttpContext.User.Identity!.Name!;
 
-    await gameService.GoToResults(user);
+    gameService.GoToResults(user);
     return Ok();
   }
 
@@ -57,7 +57,7 @@ public class GameAdminController : Controller {
   public async Task<IActionResult> GetState() {
     var user = HttpContext.User.Identity!.Name!;
 
-    var state = await gameService.GetAdminGameState(user);
+    var state = gameService.GetAdminGameState(user);
     return Json(state);
   }
 }

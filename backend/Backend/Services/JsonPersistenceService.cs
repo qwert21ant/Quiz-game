@@ -14,26 +14,26 @@ public class JsonPersistenceService<T> {
     this.filePath = filePath;
     this.defaultValue = defaultValue;
 
-    Load().ConfigureAwait(false).GetAwaiter().GetResult();
+    Load();
   }
 
-  protected async Task Load() {
+  protected void Load() {
     if (!File.Exists(filePath)) {
       value = defaultValue;
       return;
     }
     
-    var json = await File.ReadAllTextAsync(filePath);
+    var json = File.ReadAllText(filePath);
     value = JsonSerializer.Deserialize<T>(json);
   }
 
-  protected async Task Save() {
+  protected void Save() {
     var json = JsonSerializer.Serialize(value);
-    await File.WriteAllTextAsync(filePath, json);
+    File.WriteAllText(filePath, json);
   }
 
-  protected async Task Mutate(Action<T> mutator) {
+  protected void Mutate(Action<T> mutator) {
     mutator(value!);
-    await Save();
+    Save();
   }
 }

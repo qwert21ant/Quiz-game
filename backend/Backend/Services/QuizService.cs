@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
 
 public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService {
@@ -9,93 +8,109 @@ public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService 
     : base(Path.Join(settings.Value.RootDir, "quizzes.json"), new ())
     {}
 
-  public async Task InitUser(string user) {
-    if (Value.Quizzes.ContainsKey(user))
-      return;
-    
-    await Mutate(value => {
-      value.Quizzes.Add(user, new ());
-    });
-  }
+  public void InitUser(string user) {
+    lock (this) {
+      if (Value.Quizzes.ContainsKey(user))
+        return;
 
-  public async Task<bool> HasQuiz(string user, string quizId) {
-    return Value.Quizzes[user].ContainsKey(quizId);
-  }
-
-  public async Task<string> CreateQuiz(string user, string quizName) {
-    var id = GetNewID();
-    await Mutate(value => {
-      value.Quizzes[user].Add(id, new Quiz {
-        Info = new QuizInfo {
-          Id = id,
-          Name = quizName
-        }
+      Mutate(value => {
+        value.Quizzes.Add(user, new ());
       });
-    });
-    return id;
+    }
   }
 
-  public async Task RemoveQuiz(string user, string quizId) {
-    if (!Value.Quizzes[user].ContainsKey(quizId))
-      throw new ServiceException("There is no quiz with id " + quizId);
-    
-    await Mutate(value => {
-      value.Quizzes[user].Remove(quizId);
-    });
+  public bool HasQuiz(string user, string quizId) {
+    lock (this) {
+      return Value.Quizzes[user].ContainsKey(quizId);
+    }
   }
 
-  public async Task AddQuizQuestion(string user, string quizId, QuizQuestion question) {
-    if (!Value.Quizzes[user].ContainsKey(quizId))
-      throw new ServiceException("There is no quiz with id " + quizId);
-
-    EnsureQuizQuestionCorrect(question);
-
-    await Mutate(value => {
-      value.Quizzes[user][quizId].Questions.Add(question);
-    });
+  public string CreateQuiz(string user, string quizName) {
+    lock (this) {
+      var id = GetNewID();
+      Mutate(value => {
+        value.Quizzes[user].Add(id, new Quiz {
+          Info = new QuizInfo {
+            Id = id,
+            Name = quizName
+          }
+        });
+      });
+      return id;
+    }
   }
 
-  public async Task ChangeQuizQuestion(string user, string quizId, int questionInd, QuizQuestion question) {
-    if (!Value.Quizzes[user].ContainsKey(quizId))
-      throw new ServiceException("There is no quiz with id " + quizId);
-    
-    if (questionInd >= Value.Quizzes[user][quizId].Questions.Count)
-      throw new ServiceException("Incorrect questionInd");
-    
-    EnsureQuizQuestionCorrect(question);
+  public void RemoveQuiz(string user, string quizId) {
+    lock (this) {
+      if (!Value.Quizzes[user].ContainsKey(quizId))
+        throw new ServiceException("There is no quiz with id " + quizId);
 
-    await Mutate(value => {
-      value.Quizzes[user][quizId].Questions[questionInd] = question;
-    });
+      Mutate(value => {
+        value.Quizzes[user].Remove(quizId);
+      });
+    }
   }
 
-  public async Task RemoveQuizQuestion(string user, string quizId, int questionInd) {
-    if (!Value.Quizzes[user].ContainsKey(quizId))
-      throw new ServiceException("There is no quiz with id " + quizId);
-    
-    if (questionInd < 0 || questionInd >= Value.Quizzes[user][quizId].Questions.Count)
-      throw new ServiceException("Incorrect questionInd");
-    
-    await Mutate(value => {
-      value.Quizzes[user][quizId].Questions.RemoveAt(questionInd);
-    });
+  public void AddQuizQuestion(string user, string quizId, QuizQuestion question) {
+    lock (this) {
+      if (!Value.Quizzes[user].ContainsKey(quizId))
+        throw new ServiceException("There is no quiz with id " + quizId);
+
+      EnsureQuizQuestionCorrect(question);
+
+      Mutate(value => {
+        value.Quizzes[user][quizId].Questions.Add(question);
+      });
+    }
   }
 
-  public async Task<Quiz> GetQuiz(string user, string quizId) {
-    if (!Value.Quizzes[user].ContainsKey(quizId))
-      throw new ServiceException("There is no quiz with id " + quizId);
-    
-    return Value.Quizzes[user][quizId];
+  public void ChangeQuizQuestion(string user, string quizId, int questionInd, QuizQuestion question) {
+    lock (this) {
+      if (!Value.Quizzes[user].ContainsKey(quizId))
+        throw new ServiceException("There is no quiz with id " + quizId);
+
+      if (questionInd >= Value.Quizzes[user][quizId].Questions.Count)
+        throw new ServiceException("Incorrect questionInd");
+
+      EnsureQuizQuestionCorrect(question);
+
+      Mutate(value => {
+        value.Quizzes[user][quizId].Questions[questionInd] = question;
+      });
+    }
+  }
+
+  public void RemoveQuizQuestion(string user, string quizId, int questionInd) {
+    lock (this) {
+      if (!Value.Quizzes[user].ContainsKey(quizId))
+        throw new ServiceException("There is no quiz with id " + quizId);
+
+      if (questionInd < 0 || questionInd >= Value.Quizzes[user][quizId].Questions.Count)
+        throw new ServiceException("Incorrect questionInd");
+
+      Mutate(value => {
+        value.Quizzes[user][quizId].Questions.RemoveAt(questionInd);
+      });
+    }
+  }
+
+  public Quiz GetQuiz(string user, string quizId) {
+    lock (this) {
+      if (!Value.Quizzes[user].ContainsKey(quizId))
+        throw new ServiceException("There is no quiz with id " + quizId);
+
+      return Value.Quizzes[user][quizId];
+    }
   }
 
   private void EnsureQuizQuestionCorrect(QuizQuestion question) {
     if (question.Type == QuizQuestionType.Choise) {
       if (question.Options == null)
         throw new ServiceException("question.options is null");
-      
+
       if (question.Options.Length <= 1)
         throw new ServiceException("There must be at least two options");
-      
+
       if (question.AnswerOptionInd == null || question.AnswerOptionInd < 0 || question.AnswerOptionInd >= question.Options.Length)
         throw new ServiceException("question.answerOptionInd is incorrect");
     } else {
@@ -104,8 +119,10 @@ public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService 
     }
   }
 
-  public async Task<QuizInfo[]> GetQuizzesInfo(string user) {
-    return Value.Quizzes[user].Select(x => x.Value.Info).ToArray();
+  public QuizInfo[] GetQuizzesInfo(string user) {
+    lock (this) {
+      return Value.Quizzes[user].Select(x => x.Value.Info).ToArray();
+    }
   }
 
   private string GetNewID() {
