@@ -1,105 +1,103 @@
 using System;
-using System.IO;
 using System.Linq;
-using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
-public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService {
-  public QuizService(IOptions<AppSettings> settings)
-    : base(Path.Join(settings.Value.RootDir, "quizzes.json"), new ())
-    {}
+public class QuizService : IQuizService {
+  private IMongoCollection<QuizDocument> collection;
+
+  public QuizService(MongoDBService dbService) {
+    collection = dbService.GetCollection<QuizDocument>("quizzes");
+  }
+
+  private FilterDefinition<QuizDocument> QuizFilter(string user, string quizId) {
+    return Builders<QuizDocument>.Filter.And([
+      Builders<QuizDocument>.Filter.Eq("User", user),
+      Builders<QuizDocument>.Filter.Eq("Quiz.Info.Id", quizId)
+    ]);
+  }
 
   public void InitUser(string user) {
-    lock (this) {
-      if (Value.Quizzes.ContainsKey(user))
-        return;
-
-      Mutate(value => {
-        value.Quizzes.Add(user, new ());
-      });
-    }
+    // remove
   }
 
   public bool HasQuiz(string user, string quizId) {
     lock (this) {
-      return Value.Quizzes[user].ContainsKey(quizId);
+      return collection.Find(
+        QuizFilter(user, quizId)
+      ).CountDocuments() == 1;
     }
   }
 
   public string CreateQuiz(string user, string quizName) {
     lock (this) {
       var id = GetNewID();
-      Mutate(value => {
-        value.Quizzes[user].Add(id, new Quiz {
+
+      collection.InsertOne(new QuizDocument {
+        User = user,
+        Quiz = new Quiz {
           Info = new QuizInfo {
             Id = id,
             Name = quizName
           }
-        });
+        }
       });
+
       return id;
     }
   }
 
   public void RemoveQuiz(string user, string quizId) {
     lock (this) {
-      if (!Value.Quizzes[user].ContainsKey(quizId))
-        throw new ServiceException("There is no quiz with id " + quizId);
-
-      Mutate(value => {
-        value.Quizzes[user].Remove(quizId);
-      });
+      collection.DeleteOne(QuizFilter(user, quizId));
     }
   }
 
   public void AddQuizQuestion(string user, string quizId, QuizQuestion question) {
     lock (this) {
-      if (!Value.Quizzes[user].ContainsKey(quizId))
-        throw new ServiceException("There is no quiz with id " + quizId);
-
       EnsureQuizQuestionCorrect(question);
 
-      Mutate(value => {
-        value.Quizzes[user][quizId].Questions.Add(question);
-      });
+      collection.UpdateOne(
+        QuizFilter(user, quizId),
+        Builders<QuizDocument>.Update.Push("Quiz.Questions", question)
+      );
     }
   }
 
   public void ChangeQuizQuestion(string user, string quizId, int questionInd, QuizQuestion question) {
     lock (this) {
-      if (!Value.Quizzes[user].ContainsKey(quizId))
-        throw new ServiceException("There is no quiz with id " + quizId);
+      var quiz = collection.Find(QuizFilter(user, quizId)).ToList()[0].Quiz;
 
-      if (questionInd >= Value.Quizzes[user][quizId].Questions.Count)
+      if (questionInd >= quiz.Questions.Count)
         throw new ServiceException("Incorrect questionInd");
 
       EnsureQuizQuestionCorrect(question);
 
-      Mutate(value => {
-        value.Quizzes[user][quizId].Questions[questionInd] = question;
-      });
+      collection.UpdateOne(
+        QuizFilter(user, quizId),
+        Builders<QuizDocument>.Update.Set("Quiz.Questions." + questionInd, question)
+      );
     }
   }
 
   public void RemoveQuizQuestion(string user, string quizId, int questionInd) {
     lock (this) {
-      if (!Value.Quizzes[user].ContainsKey(quizId))
-        throw new ServiceException("There is no quiz with id " + quizId);
+      var quiz = collection.Find(QuizFilter(user, quizId)).ToList()[0].Quiz;
 
-      if (questionInd < 0 || questionInd >= Value.Quizzes[user][quizId].Questions.Count)
+      if (questionInd < 0 || questionInd >= quiz.Questions.Count)
         throw new ServiceException("Incorrect questionInd");
 
-      Mutate(value => {
-        value.Quizzes[user][quizId].Questions.RemoveAt(questionInd);
-      });
+      quiz.Questions.RemoveAt(questionInd);
+
+      collection.UpdateOne(
+        QuizFilter(user, quizId),
+        Builders<QuizDocument>.Update.Set("Quiz.Questions", quiz.Questions)
+      );
     }
   }
 
   public Quiz GetQuiz(string user, string quizId) {
     lock (this) {
-      if (!Value.Quizzes[user].ContainsKey(quizId))
-        throw new ServiceException("There is no quiz with id " + quizId);
-
-      return Value.Quizzes[user][quizId];
+      return collection.Find(QuizFilter(user, quizId)).ToList()[0].Quiz;
     }
   }
 
@@ -121,7 +119,8 @@ public class QuizService : JsonPersistenceService<QuizzesStorage>, IQuizService 
 
   public QuizInfo[] GetQuizzesInfo(string user) {
     lock (this) {
-      return Value.Quizzes[user].Select(x => x.Value.Info).ToArray();
+      var list = collection.Find(Builders<QuizDocument>.Filter.Eq("User", user)).ToList();
+      return list.Select(x => x.Quiz.Info).ToArray();
     }
   }
 

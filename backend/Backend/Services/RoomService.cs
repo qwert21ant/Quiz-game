@@ -1,23 +1,32 @@
 using System;
-using System.IO;
-using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
-public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
-  private Random random = new Random();
+public class RoomService : IRoomService {
+  private IMongoCollection<RoomDocument> collection;
   private IQuizService quizService;
+  private Random random = new Random();
 
-  public RoomService(IOptions<AppSettings> settings, IQuizService quizService)
-    : base(Path.Join(settings.Value.RootDir, "rooms.json"), new RoomsStorage()) {
+  public RoomService(MongoDBService dbService, IQuizService quizService) {
+    collection = dbService.GetCollection<RoomDocument>("rooms");
     this.quizService = quizService;
+  }
+
+  private FilterDefinition<RoomDocument> RoomFilter(string user) {
+    return Builders<RoomDocument>.Filter.Eq("User", user);
+  }
+
+  private RoomDocument GetRoomDocument(string user) {
+    return collection.Find(RoomFilter(user)).ToList()[0];
   }
 
   public void InitUser(string user) {
     lock (this) {
-      if (Value.Rooms.ContainsKey(user))
+      if (collection.Find(RoomFilter(user)).CountDocuments() == 1)
         return;
 
-      Mutate(value => {
-        value.Rooms.Add(user, new Room {
+      collection.InsertOne(new RoomDocument {
+        User = user,
+        Room = new Room {
           Config = new RoomConfig {
             Info = new RoomInfo {
               Name = user + "\'s room"
@@ -25,28 +34,31 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
             MaxParticipants = 10
           },
           State = new ()
-        });
+        }
       });
     }
   }
 
   public void StartGame(string user) {
     lock (this) {
-      if (Value.Rooms[user].State.IsGameRunning)
+      var doc = GetRoomDocument(user);
+      if (doc.Room.State.IsGameRunning)
         throw new ServiceException("Game is already running");
 
-      if (Value.Rooms[user].State.Participants.Count == 0)
+      if (doc.Room.State.Participants.Count == 0)
         throw new ServiceException("Can't start game in empty room");
 
-      Mutate(value => {
-        value.Rooms[user].State.IsGameRunning = true;
-      });
+      collection.UpdateOne(
+        RoomFilter(user),
+        Builders<RoomDocument>.Update.Set("Room.State.IsGameRunning", true)
+      );
     }
   }
 
   public void EndGame(string user) {
     lock (this) {
-      if (!Value.Rooms[user].State.IsGameRunning)
+      var doc = GetRoomDocument(user);
+      if (!doc.Room.State.IsGameRunning)
         throw new ServiceException("Game is not running");
 
       CloseRoom(user);
@@ -55,7 +67,13 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
 
   public RoomConfig GetRoomConfig(string user) {
     lock (this) {
-      return Value.Rooms[user].Config;
+      return GetRoomDocument(user).Room.Config;
+    }
+  }
+
+  public RoomState GetRoomState(string user) {
+    lock (this) {
+      return GetRoomDocument(user).Room.State;
     }
   }
 
@@ -67,42 +85,39 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
       if (!quizService.HasQuiz(user, roomConfig.QuizId))
         throw new ServiceException("There is no quiz with id " + roomConfig.QuizId);
 
-      Mutate(value => {
-        value.Rooms[user].Config = roomConfig;
-      });
-    }
-  }
-
-  public RoomState GetRoomState(string user) {
-    lock (this) {
-      return Value.Rooms[user].State;
+      collection.UpdateOne(
+        RoomFilter(user),
+        Builders<RoomDocument>.Update.Set("Room.Config", roomConfig)
+      );
     }
   }
 
   public void OpenRoom(string user) {
     lock (this) {
-      if (Value.Rooms[user].State.IsOpen)
+      var doc = GetRoomDocument(user);
+      if (doc.Room.State.IsOpen)
         throw new ServiceException("Room already opened");
 
-      if (!quizService.HasQuiz(user, Value.Rooms[user].Config.QuizId!))
-        throw new ServiceException("There is no quiz with id " + Value.Rooms[user].Config.QuizId);
+      if (!quizService.HasQuiz(user, doc.Room.Config.QuizId!))
+        throw new ServiceException("There is no quiz with id " + doc.Room.Config.QuizId);
 
-      Mutate(value => {
-        var id = GetUniqueRoomID();
-        value.Rooms[user].State.IsOpen = true;
-        value.Rooms[user].State.Id = id;
-        value.RoomIdToUser.Add(id, user);
-      });
+      var id = GetUniqueRoomID();
+      collection.UpdateOne(
+        RoomFilter(user),
+        Builders<RoomDocument>.Update
+          .Set("Room.State.IsOpen", true)
+          .Set("Room.State.Id", id)
+      );
     }
   }
 
   public void CloseRoom(string user) {
     lock (this) {
-      Mutate(value => {
-        var id = value.Rooms[user].State.Id!;
-        value.Rooms[user].State = new ();
-        value.RoomIdToUser.Remove(id);
-      });
+      collection.UpdateOne(
+        RoomFilter(user),
+        Builders<RoomDocument>.Update
+          .Set("Room.State", new RoomState())
+      );
     }
   }
 
@@ -111,12 +126,16 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
       if (user == participant)
         throw new ServiceException("You cant kick yourself");
 
-      if (!Value.Rooms[user].State.Participants.Contains(participant))
+      var doc = GetRoomDocument(user);
+      if (!doc.Room.State.Participants.Contains(participant))
         throw new ServiceException("There is no participant " + participant + " in your this room");
 
-      Mutate(value => {
-        value.Rooms[user].State.Participants.Remove(participant);
-      });
+      doc.Room.State.Participants.Remove(participant);
+      collection.UpdateOne(
+        RoomFilter(user),
+        Builders<RoomDocument>.Update
+          .Set("Room.State.Participants", doc.Room.State.Participants)
+      );
     }
   }
 
@@ -126,15 +145,18 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
       if (user == owner)
         throw new ServiceException("Owner of room cant join room");
 
-      if (Value.Rooms[owner].State.Participants.Contains(user))
+      var doc = GetRoomDocument(owner);
+      if (doc.Room.State.Participants.Contains(user))
         throw new ServiceException("You are already joined room");
 
-      if (Value.Rooms[owner].Config.MaxParticipants == Value.Rooms[owner].State.Participants.Count)
+      if (doc.Room.Config.MaxParticipants == doc.Room.State.Participants.Count)
         throw new ServiceException("Room is full");
 
-      Mutate(value => {
-        value.Rooms[owner].State.Participants.Add(user);
-      });
+      collection.UpdateOne(
+        RoomFilter(owner),
+        Builders<RoomDocument>.Update
+          .Push("Room.State.Participants", user)
+      );
     }
   }
 
@@ -144,17 +166,23 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
       if (user == owner)
         throw new ServiceException("Owner of room cant join room");
 
-      Mutate(value => {
-        value.Rooms[owner].State.Participants.Remove(user);
-      });
+      var doc = GetRoomDocument(user);
+
+      doc.Room.State.Participants.Remove(user);
+      collection.UpdateOne(
+        RoomFilter(owner),
+        Builders<RoomDocument>.Update
+          .Set("Room.State.Participants", doc.Room.State.Participants)
+      );
     }
   }
 
   public RoomInfo GetRoomInfo(string user, string roomId) {
     lock (this) {
       var owner = GetRoomOwner(roomId);
+      var doc = GetRoomDocument(owner);
 
-      if (!Value.Rooms[owner].State.Participants.Contains(user))
+      if (!doc.Room.State.Participants.Contains(user))
         throw new ServiceException("You are not in room");
 
       return GetRoomConfig(owner).Info;
@@ -164,23 +192,29 @@ public class RoomService : JsonPersistenceService<RoomsStorage>, IRoomService {
   public bool GetIsGameRunning(string user, string roomId) {
     lock (this) {
       var owner = GetRoomOwner(roomId);
-      return Value.Rooms[owner].State.IsGameRunning;
+      return GetRoomState(owner).IsGameRunning;
     }
   }
 
   public string GetRoomOwner(string roomId) {
     lock (this) {
-      if (!Value.RoomIdToUser.ContainsKey(roomId))
+      var list = collection.Find(
+        Builders<RoomDocument>.Filter.Eq("Room.State.Id", roomId)
+      ).ToList();
+      if (list.Count == 0)
         throw new ServiceException("Room with id " + roomId + " not found");
 
-      return Value.RoomIdToUser[roomId];
+      return list[0].User;
     }
   }
 
   private string GetUniqueRoomID() {
     while (true) {
       string id = GetNewRoomID();
-      if (!Value.RoomIdToUser.ContainsKey(id))
+      var list = collection.Find(
+        Builders<RoomDocument>.Filter.Eq("Room.State.Id", id)
+      ).ToList();
+      if (list.Count == 0)
         return id;
     }
   }

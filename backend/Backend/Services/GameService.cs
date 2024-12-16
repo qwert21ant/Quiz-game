@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 /*
 State changes:
@@ -14,14 +15,23 @@ Waiting -[NextQuestion]> Question -[GoToResults]> Results -[EndGame]> *room clos
                           Answer
 */
 
-public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
+public class GameService : IGameService {
+  private IMongoCollection<GameDocument> collection;
   private IRoomService roomService;
   private IQuizService quizService;
 
-  public GameService(IOptions<AppSettings> settings, IRoomService roomService, IQuizService quizService)
-    : base(Path.Join(settings.Value.RootDir, "games.json"), new GamesStorage()) {
+  public GameService(MongoDBService dbService, IRoomService roomService, IQuizService quizService) {
+    collection = dbService.GetCollection<GameDocument>("games");
     this.roomService = roomService;
     this.quizService = quizService;
+  }
+
+  private FilterDefinition<GameDocument> GameFilter(string user) {
+    return Builders<GameDocument>.Filter.Eq("User", user);
+  }
+
+  private GameDocument GetGameDocument(string user) {
+    return collection.Find(GameFilter(user)).ToList()[0];
   }
 
   public void InitUser(string user) {
@@ -38,14 +48,15 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       foreach (var participant in roomState.Participants)
         leaderboard.Add(participant, 0);
 
-      Mutate(value => {
-        value.Games.Add(user, new GameState {
+      collection.InsertOne(new GameDocument {
+        User = user,
+        State = new GameState {
           StateType = GameStateType.Waiting,
           Results = new GameResults {
             Leaderboard = leaderboard
           },
           NextQuestionInd = 0,
-        });
+        }
       });
     }
   }
@@ -54,20 +65,19 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
     lock (this) {
       roomService.EndGame(user);
 
-      Mutate(value => {
-        value.Games.Remove(user);
-      });
+      collection.DeleteOne(GameFilter(user));
     }
   }
 
   public GameState GetAdminGameState(string user) {
     lock (this) {
-      if (!Value.Games.ContainsKey(user))
+      if (!roomService.GetRoomState(user).IsGameRunning)
         throw new ServiceException("You haven't started game");
 
       EnsureQuestionFinished(user);
 
-      return Value.Games[user];
+      var doc = GetGameDocument(user);
+      return doc.State;
     }
   }
 
@@ -76,56 +86,62 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       if (roomService.GetRoomConfig(user).NextQuestionAutoMode)
         throw new ServiceException("You are not allowed to select question in auto mode");
 
-      if (Value.Games[user].StateType != GameStateType.Waiting && Value.Games[user].StateType != GameStateType.Answer)
+      var doc = GetGameDocument(user);
+      if (doc.State.StateType != GameStateType.Waiting && doc.State.StateType != GameStateType.Answer)
         throw new ServiceException("Incorrect state");
 
-      Mutate(value => {
-        value.Games[user].NextQuestionInd = questionInd;
-      });
+      collection.UpdateOne(
+        GameFilter(user),
+        Builders<GameDocument>.Update
+          .Set("State.NextQuestionInd", questionInd)
+      );
     }
   }
 
   public void NextQuestion(string user) {
     lock (this) {
-      if (Value.Games[user].StateType != GameStateType.Waiting && Value.Games[user].StateType != GameStateType.Answer)
+      var doc = GetGameDocument(user);
+      if (doc.State.StateType != GameStateType.Waiting && doc.State.StateType != GameStateType.Answer)
         throw new ServiceException("Incorrect state");
 
       var roomConfig = roomService.GetRoomConfig(user);
       var quiz = quizService.GetQuiz(user, roomConfig.QuizId!);
 
-      if (roomConfig.NextQuestionAutoMode && Value.Games[user].NextQuestionInd == quiz.Questions.Count) {
+      if (roomConfig.NextQuestionAutoMode && doc.State.NextQuestionInd == quiz.Questions.Count) {
         GoToResults(user);
         return;
       }
 
-      var question = quiz.Questions[Value.Games[user].NextQuestionInd];
+      var question = quiz.Questions[doc.State.NextQuestionInd];
 
-      Mutate(value => {
-        value.Games[user].StateType = GameStateType.Question;
-        value.Games[user].Question = new GameQuestion {
-          Type = question.Type,
-          Text = question.Text,
-          TimeLimit = 30, // todo
-          Options = question.Options,
-          QuestionAppearanceTime = CurrentTs()
-        };
-        value.Games[user].Answer = new GameAnswer {
-          Answer = question.Type == QuizQuestionType.Choise ? question.Options![(int) question.AnswerOptionInd!] : question.Answer,
-          AnswerOptionInd = question.AnswerOptionInd,
-        };
-        value.Games[user].ParticipantsAnswers = new ();
-      });
+      collection.UpdateOne(
+        GameFilter(user),
+        Builders<GameDocument>.Update
+          .Set("State.StateType", GameStateType.Question)
+          .Set("State.Question", new GameQuestion {
+            Type = question.Type,
+            Text = question.Text,
+            TimeLimit = 30, // todo
+            Options = question.Options,
+            QuestionAppearanceTime = CurrentTs()
+          })
+          .Set("State.Answer", new GameAnswer {
+            Answer = question.Type == QuizQuestionType.Choise ? question.Options![(int) question.AnswerOptionInd!] : question.Answer,
+            AnswerOptionInd = question.AnswerOptionInd,
+          })
+          .Set("State.ParticipantsAnswers", new Dictionary<string, GameAnswer>())
+      );
     }
   }
 
   public void Answer(string user, string roomId, GameAnswer answer) {
     lock (this) {
       var owner = roomService.GetRoomOwner(roomId);
-
-      if (!Value.Games.ContainsKey(owner))
+      if (!roomService.GetRoomState(owner).IsGameRunning)
         throw new ServiceException("Game hasn't started yet");
 
-      var gameState = Value.Games[owner];
+      var doc = GetGameDocument(owner);
+      var gameState = doc.State;
       if (gameState.Results!.Leaderboard!.ContainsKey(owner))
         throw new ServiceException("You are not in room");
 
@@ -149,12 +165,14 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
       if (gameState.Question!.Type == QuizQuestionType.Choise)
         answer.Answer = gameState.Question.Options![(int) answer.AnswerOptionInd!];
 
-      Mutate(value => {
-        value.Games[owner].ParticipantsAnswers!.Add(user, answer);
-        value.Games[owner].Results!.Leaderboard![user] += CountScoreForAnswer(owner, answer);
-      });
+      collection.UpdateOne(
+        GameFilter(owner),
+        Builders<GameDocument>.Update
+          .Set("State.ParticipantsAnswers." + user, answer)
+          .Set("State.Results.Leaderboard." + user, gameState.Results!.Leaderboard![user] + CountScoreForAnswer(owner, answer))
+      );
 
-      if (gameState.ParticipantsAnswers!.Count == gameState.Results!.Leaderboard!.Count)
+      if (gameState.ParticipantsAnswers!.Count + 1 == gameState.Results!.Leaderboard!.Count)
         FinishQuestion(owner);
     }
   }
@@ -162,11 +180,11 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
   public GameState GetParticipantGameState(string user, string roomId) {
     lock (this) {
       var owner = roomService.GetRoomOwner(roomId);
-
-      if (!Value.Games.ContainsKey(owner))
+      if (!roomService.GetRoomState(owner).IsGameRunning)
         throw new ServiceException("Game hasn't started yet");
 
-      var gameState = Value.Games[owner];
+      var doc = GetGameDocument(owner);
+      var gameState = doc.State;
       if (gameState.Results!.Leaderboard!.ContainsKey(owner))
         throw new ServiceException("You are not in room");
 
@@ -189,20 +207,24 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
 
   public void GoToResults(string user) {
     lock (this) {
-      if (Value.Games[user].StateType == GameStateType.Question)
+      var doc = GetGameDocument(user);
+      if (doc.State.StateType == GameStateType.Question)
         throw new ServiceException("Incorrect state");
 
-      Mutate(value => {
-        value.Games[user].StateType = GameStateType.Results;
-        value.Games[user].Results!.ParticipantsPlaces =
-          value.Games[user].Results!.Leaderboard!
-          .OrderByDescending(entry => entry.Value)
-          .Select((entry, index) => new {
-            entry.Key,
-            Value = index + 1,
-          })
-          .ToDictionary(x => x.Key, x => x.Value);
-      });
+      collection.UpdateOne(
+        GameFilter(user),
+        Builders<GameDocument>.Update
+          .Set("State.StateType", GameStateType.Results)
+          .Set("State.Results.ParticipantsPlaces",
+            doc.State.Results!.Leaderboard!
+              .OrderByDescending(entry => entry.Value)
+              .Select((entry, index) => new {
+                entry.Key,
+                Value = index + 1,
+              })
+              .ToDictionary(x => x.Key, x => x.Value)
+          )
+      );
     }
   }
 
@@ -210,25 +232,30 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
     lock (this) {
       var isAutoMode = roomService.GetRoomConfig(user).NextQuestionAutoMode;
 
-      Mutate(value => {
-        value.Games[user].StateType = GameStateType.Answer;
-        if (isAutoMode)
-          value.Games[user].NextQuestionInd++;
-      });
+      collection.UpdateOne(
+        GameFilter(user),
+        isAutoMode
+          ? Builders<GameDocument>.Update
+            .Set("State.StateType", GameStateType.Answer)
+            .Inc("State.NextQuestionInd", 1)
+          : Builders<GameDocument>.Update
+            .Set("State.StateType", GameStateType.Answer)
+      );
     }
   }
 
   private int CountScoreForAnswer(string user, GameAnswer answer) {
+    var doc = GetGameDocument(user);
     if (
-      Value.Games[user].Question!.Type == QuizQuestionType.Text && Value.Games[user].Answer!.Answer != answer.Answer
-      || Value.Games[user].Question!.Type == QuizQuestionType.Choise && Value.Games[user].Answer!.AnswerOptionInd != answer.AnswerOptionInd
+      doc.State.Question!.Type == QuizQuestionType.Text && doc.State.Answer!.Answer != answer.Answer
+      || doc.State.Question!.Type == QuizQuestionType.Choise && doc.State.Answer!.AnswerOptionInd != answer.AnswerOptionInd
     )
       return 0;
 
     int score = 10; // for correct answer
 
-    int tl = Value.Games[user].Question!.TimeLimit;
-    int secsFromStart = (int) (CurrentTs() - (long) Value.Games[user].Question!.QuestionAppearanceTime!) / 1000;
+    int tl = doc.State.Question!.TimeLimit;
+    int secsFromStart = (int) (CurrentTs() - (long) doc.State.Question!.QuestionAppearanceTime!) / 1000;
 
     score += (int) ((tl - secsFromStart) / (double) tl * 10); // for speed
 
@@ -236,10 +263,11 @@ public class GameService : JsonPersistenceService<GamesStorage>, IGameService {
   }
 
   private void EnsureQuestionFinished(string user) {
-    if (Value.Games[user].StateType != GameStateType.Question)
+    var doc = GetGameDocument(user);
+    if (doc.State.StateType != GameStateType.Question)
       return;
 
-    if (Value.Games[user].Question!.QuestionAppearanceTime + Value.Games[user].Question!.TimeLimit * 1000L <= CurrentTs())
+    if (doc.State.Question!.QuestionAppearanceTime + doc.State.Question!.TimeLimit * 1000L <= CurrentTs())
       FinishQuestion(user);
   }
 
